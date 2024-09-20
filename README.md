@@ -25,6 +25,7 @@ pip install numpy pandas
 ### Freeze dependencies to requirements.txt
 ```
 pip freeze > requirements.txt
+pip freeze > ./web/requirements.txt
 ```
 
 ### Deactivate the VM
@@ -32,9 +33,16 @@ pip freeze > requirements.txt
 deactivate
 ```
 
+pip install -r requirements.txt
+
+uvicorn main:app --reload
+
+
 ## Run Service
 
 DEV: `fastapi dev main.py`
+uvicorn main:app --reload
+
 
 ## Project Structure
 

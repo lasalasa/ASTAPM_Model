@@ -1,0 +1,46 @@
+import dash
+from dash import html
+import dash_bootstrap_components as dbc
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.express as px
+
+from dash import Dash, dcc, html, Input, Output
+
+dash.register_page(__name__, name='Dashboard', title='AST-APM | Dashboard')
+
+fig = go.Figure()
+
+df = px.data.stocks()
+fig = px.line(df, x="date", y=df.columns,
+              hover_data={"date": "|%B %d, %Y"},
+              title='custom tick labels')
+fig.update_xaxes(
+    dtick="M1",
+    tickformat="%b\n%Y",
+    rangeslider_visible=True,
+    rangeselector=dict(
+        buttons=list([
+            dict(count=1, label="1m", step="month", stepmode="backward"),
+            dict(count=6, label="6m", step="month", stepmode="backward"),
+            dict(count=1, label="YTD", step="year", stepmode="todate"),
+            dict(count=1, label="1y", step="year", stepmode="backward"),
+            dict(step="all")
+        ])
+    ))
+
+layout =  dbc.Container([
+
+    dbc.Row([
+        dbc.Col([html.H3(['Human Factors Trend Overview'])], width=12, className='row-titles')
+    ]),
+
+   dbc.Row(
+        [
+            # dbc.Col([], width = 2),
+            dbc.Col(dcc.Graph(figure=fig))
+        ]
+    )
+])
+
+# https://plotly.com/python/range-slider/
