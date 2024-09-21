@@ -37,12 +37,12 @@ class CoreUtils:
 
         path_prefix = PATH_PREFIX
 
-        asrs = pd.read_csv(f'{path_prefix}/{ds_name}/{ds_name}.csv', low_memory=False)
-        asrs_narrative = pd.read_csv(f'{path_prefix}/{ds_name}/{ds_name}_narrative.csv', low_memory=False)
-        asrs_factors = pd.read_csv(f'{path_prefix}/{ds_name}/{ds_name}_safety_factors.csv', low_memory=False)
+        data_df = pd.read_csv(f'{path_prefix}/{ds_name}/{ds_name}.csv', low_memory=False)
+        # asrs_narrative = pd.read_csv(f'{path_prefix}/{ds_name}/{ds_name}_narrative.csv', low_memory=False)
+        # asrs_factors = pd.read_csv(f'{path_prefix}/{ds_name}/{ds_name}_safety_factors.csv', low_memory=False)
 
-        data_df = pd.merge(asrs, asrs_narrative, on='event_id', how='left')
-        data_df = pd.merge(data_df, asrs_factors, on='event_id', how='left')
+        # data_df = pd.merge(asrs, asrs_narrative, on='event_id', how='left')
+        # data_df = pd.merge(data_df, asrs_factors, on='event_id', how='left')
 
         data_df = data_df[(data_df['year'] >= from_year) & (data_df['year'] <= to_year)]
 

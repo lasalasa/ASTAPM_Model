@@ -1,3 +1,4 @@
+# https://plotly.com/python/#ai_ml
 import time
 import os
 import json
@@ -29,18 +30,17 @@ from datetime import date
 
 from web.pages.constant import mock_data
 
-EXPLAINER = """This is the sample simulator version 01."""
-
 dash.register_page(__name__, name='Simulator', title='AST-APM | Simulator')
 
-end_date = datetime.date.today()
-start_date = end_date - datetime.timedelta(days=365)
+end_date = date(2023, 12, 31)
+start_date = end_date - datetime.timedelta(days=365*5)
 
 simulator_form_data = {
-    "input_data_source": "NTSB",
+    "input_data_source": "ASRS",
     "input_model_name": "LSTM_Predictor",
     "input_from_date": start_date.strftime("%Y-%m-%d %H:%M:%S"),
-    "input_to_date": end_date.strftime("%Y-%m-%d %H:%M:%S")
+    "input_to_date": end_date.strftime("%Y-%m-%d %H:%M:%S"),
+    "input_model_ls_version": 2
 }
 
 source_selector = dbc.Select(
@@ -67,23 +67,35 @@ model_type_selector = dbc.Select(
 # https://dash.plotly.com/dash-core-components/datepickerrange
 date_range = dcc.DatePickerRange(
     id="date_range_picker_id",
-    min_date_allowed=datetime.date(2020, 1, 1),
-    max_date_allowed=datetime.date.today(),
-    initial_visible_month=datetime.date.today(),
+    min_date_allowed=datetime.date(2000, 1, 1),
+    max_date_allowed=end_date,
+    initial_visible_month=start_date,
     start_date=start_date,
     end_date=end_date,
     display_format="YYYY-MM-DD",
     className="mb-6"
 )
 
+model_ls_version_selector = dbc.Select(
+    id="model_ls_selector_id",
+    options=[
+        {"label": "ASRS", "value": "asrs"},
+        {"label": "NTSB", "value": "ntsb"},
+        {"label": "Combined", "value": "asrs_ntsb"},
+    ],
+    value="asrs",
+    className="mb-2"
+)
+
 layout = dbc.Container(
     [
-        html.H1("Data Analyst Simulator"),
-        dcc.Markdown(EXPLAINER),
+        html.H1("Data Analyst Simulator (.v1)"),
+        dcc.Markdown(""),
         dbc.Row([
-            dbc.Col(source_selector, width=3),
-            dbc.Col(model_type_selector, width=3),
+            dbc.Col(source_selector, width=2),
+            dbc.Col(model_type_selector, width=2),
             dbc.Col(date_range, width=4),
+            dbc.Col(model_ls_version_selector, width=2),
             dbc.Col(dbc.Button(
                 "Start Simulator",
                 color="primary",
@@ -96,8 +108,8 @@ layout = dbc.Container(
                 dbc.Tab(label="Summary", tab_id="info"),
                 dbc.Tab(label="Evaluation Overview", tab_id="info_evaluation"),
                 dbc.Tab(label="Loss/Accuracy", tab_id="loss_accuracy"),
-                dbc.Tab(label="Performance", tab_id="histogram"),
-                dbc.Tab(label="Trend View", tab_id="bar"),
+                dbc.Tab(label="Performance", tab_id="performance"),
+                dbc.Tab(label="Trend View", tab_id="trend_view"),
             ],
             id="tabs",
             active_tab="info",
@@ -114,24 +126,33 @@ layout = dbc.Container(
 )
 
 # ------- FIG Functions ---------------
-def wordCountDistribution():
+def labelCountDistribution(data):
+
+    value_count = data['train_label_value_count']
+    df = pd.DataFrame(value_count)
+
+    fig_count = px.bar(df, x='count', y='HFACS_Category_Value_Predict', orientation='h', 
+        title="HFACS Taxonomy Label Distribution")
+    
+    return fig_count
+
+def wordCountDistribution(data):
+    narrative_word_count = data['train_narrative_word_count']
     # https://plotly.com/python/distplot/
    # Example data (replace with your actual DataFrame)
     # data = {'narrative_word_count': [120, 150, 300, 250, 400, 500, 320, 180, 240, 360, 410]}
     # df = pd.DataFrame(data)
 
-    df = px.data.tips()
-    hist_data = [df['total_bill']]  # List of lists
+    # df = px.data.tips()
+    hist_data = [narrative_word_count]  # List of lists
     group_labels = ['Word Count']  # Name of the dataset
 
     # Create distplot with histogram and KDE
     fig = ff.create_distplot(hist_data, group_labels, bin_size=50, colors=['blue'], show_hist=True, show_rug=False)
 
     # Add mean and standard deviation as annotations
-    mean = df['total_bill'].mean()
-    std = df['total_bill'].std()
-    fig.add_annotation(x=mean, y=0, text=f"μ = {mean:.2f}", showarrow=False, font=dict(size=12, color="black"))
-    fig.add_annotation(x=mean + std, y=0, text=f"σ = {std:.2f}", showarrow=False, font=dict(size=12, color="black"))
+    mean = np.mean(narrative_word_count)
+    std = np.std(narrative_word_count)
 
     # Customize the layout
     fig.update_layout(
@@ -143,34 +164,12 @@ def wordCountDistribution():
 
     return fig
 
-def totalUniqueWordCountDistribution():
+def totalUniqueWordCountDistribution(data):
+    
+    train_word_count = data['train_word_count']
 
-    # Sample cleaned text DataFrame
-    data = {
-        'narrative': [
-            "The aircraft experienced turbulence during takeoff.",
-            "The pilot reported an engine failure.",
-            "Flight attendants noticed smoke in the cabin.",
-            "The aircraft was grounded due to technical issues.",
-            "The engine was shut down after a fire warning.",
-            "The pilot made an emergency landing.",
-            "The plane was delayed due to weather conditions.",
-            "A warning light came on in the cockpit.",
-            "There was a loud noise during the descent.",
-            "The pilot declared an emergency."
-        ]
-    }
-
-    # Create DataFrame
-    clean_df = pd.DataFrame(data)
-
-    # Assuming you already have clean_df['narrative'] processed and split into words
-    all_words = [word for text in clean_df['narrative'].values for word in text.split()]
-    word_counts = Counter(all_words)
-
-    # Extract the 50 most common words
-    common_words = word_counts.most_common(50)
-    labels, values = zip(*common_words)
+    labels = train_word_count['labels']
+    values = train_word_count['values']
 
     # Create a bar plot using Plotly Express
     fig = px.bar(x=labels, y=values, title="Top 50 Most Frequent Words", labels={'x': 'Words', 'y': 'Count'})
@@ -184,13 +183,94 @@ def totalUniqueWordCountDistribution():
 
     return fig
 
-def trendView():
+def classification_report_overview(data):
+    report_df = data['classification_report']
+
+    report_df = pd.DataFrame(report_df).transpose()
+    report_df.drop(["accuracy"], inplace=True)
+
     fig = go.Figure()
 
-    df = px.data.stocks()
-    fig = px.line(df, x="date", y=df.columns,
-                hover_data={"date": "|%B %d, %Y"},
-                title='custom tick labels')
+    # Add Precision, Recall, and F1-Score bars for each class
+    fig.add_trace(go.Bar(
+        x=report_df.index,
+        y=report_df['precision'],
+        name='Precision',
+        marker_color='blue'
+    ))
+
+    fig.add_trace(go.Bar(
+        x=report_df.index,
+        y=report_df['recall'],
+        name='Recall',
+        marker_color='orange'
+    ))
+
+    fig.add_trace(go.Bar(
+        x=report_df.index,
+        y=report_df['f1-score'],
+        name='F1-Score',
+        marker_color='green'
+    ))
+
+    # Customize layout
+    fig.update_layout(
+        title='Classification Report',
+        xaxis=dict(title='Class'),
+        yaxis=dict(title='Score'),
+        barmode='group'
+    )
+
+    return fig
+
+def lossView(data):
+    fig_loss = go.Figure()
+
+    train_loss = data['train_loss']
+    test_loss = data['test_loss']
+
+    fig_loss.add_trace(go.Scatter(x=list(range(len(train_loss))), y=train_loss, mode='lines', name='Train Loss'))
+    fig_loss.add_trace(go.Scatter(x=list(range(len(test_loss))), y=test_loss, mode='lines', name='Validation Loss'))
+    fig_loss.update_layout(
+        title='Model Loss',
+        xaxis=dict(title='Epoch'),
+        yaxis=dict(title='Loss'),
+        showlegend=True
+    )
+    return fig_loss
+
+def accuracyView(data):
+    fig_accuracy = go.Figure()
+
+    train_accuracy = data['train_accuracy']
+    test_accuracy = data['test_accuracy']
+
+    fig_accuracy.add_trace(go.Scatter(x=list(range(len(train_accuracy))), y=train_accuracy, mode='lines', name='Train Loss'))
+    fig_accuracy.add_trace(go.Scatter(x=list(range(len(test_accuracy))), y=test_accuracy, mode='lines', name='Validation Loss'))
+    fig_accuracy.update_layout(
+        title='Model Accuracy',
+        xaxis=dict(title='Epoch'),
+        yaxis=dict(title='Loss'),
+        showlegend=True
+    )
+    return fig_accuracy
+
+def trendView(data):
+    fig = go.Figure()
+
+    # https://plotly.com/python/range-slider/
+    # Your dictionary data
+    predict_data = data['sample_predict_view']
+
+    # Convert dictionary to DataFrame
+    df = pd.DataFrame.from_dict(predict_data, orient='index')
+    df.index = pd.to_datetime(df.index)  # Convert index to datetime format
+    df = df.reset_index().rename(columns={'index': 'date'}) 
+
+    fig = px.line(df, x="date", y=df.columns[1:],
+        hover_data={"date": "|%B %d, %Y"},
+        title='custom tick labels')
+    
     fig.update_xaxes(
         dtick="M1",
         tickformat="%b\n%Y",
@@ -216,133 +296,46 @@ def render_tab_content(active_tab, data):
     
     if active_tab and data is not None:
         if active_tab == "info":
-            data = {
-                'category_column': ['A', 'B', 'A', 'C', 'B', 'A', 'A', 'C', 'B', 'C', 'A', 'B', 'C', 'C', 'A']
-            }
-            df = pd.DataFrame(data)
 
-            # Count the occurrences of each category
-            category_counts = df['category_column'].value_counts().reset_index()
-            category_counts.columns = ['category', 'count']
-
-            # Create a horizontal countplot using Plotly Express
-            fig_count = px.bar(category_counts, x='count', y='category', orientation='h', 
-                        title="Horizontal Countplot using Plotly")
             return html.Div(
                 [
                     dbc.Row(
-                        dbc.Col(dcc.Graph(figure=fig_count), width=12),
+                        dbc.Col(dcc.Graph(figure=labelCountDistribution(data)), width=12),
                         style={'margin-bottom': '25px'}
                     ),
                     dbc.Row(
                         [
-                            dbc.Col(dcc.Graph(figure=wordCountDistribution()), width=6),
-                            dbc.Col(dcc.Graph(figure=totalUniqueWordCountDistribution()), width=6)  
+                            dbc.Col(dcc.Graph(figure=wordCountDistribution(data)), width=6),
+                            dbc.Col(dcc.Graph(figure=totalUniqueWordCountDistribution(data)), width=6)  
                         ]                      
                     )
                 ]
             )
         elif active_tab == "info_evaluation":
 
-            print(data)
-
-            report_df = data['classification_report']
-
-            print(report_df)
-
-            report_df = pd.DataFrame(report_df).transpose()
-            report_df.drop(["accuracy"], inplace=True)
-
-            print(report_df)
-
-            fig = go.Figure()
-
-            # Add Precision, Recall, and F1-Score bars for each class
-            fig.add_trace(go.Bar(
-                x=report_df.index,
-                y=report_df['precision'],
-                name='Precision',
-                marker_color='blue'
-            ))
-
-            fig.add_trace(go.Bar(
-                x=report_df.index,
-                y=report_df['recall'],
-                name='Recall',
-                marker_color='orange'
-            ))
-
-            fig.add_trace(go.Bar(
-                x=report_df.index,
-                y=report_df['f1-score'],
-                name='F1-Score',
-                marker_color='green'
-            ))
-
-            # Customize layout
-            fig.update_layout(
-                title='Classification Report',
-                xaxis=dict(title='Class'),
-                yaxis=dict(title='Score'),
-                barmode='group'
-            )
-
             return dbc.Container(
                 dbc.Row(
-                    dbc.Col(dcc.Graph(figure=fig), width=12),
+                    dbc.Col(dcc.Graph(figure=classification_report_overview(data)), width=12),
                 )
             )
         elif active_tab == "loss_accuracy":
 
-            fig_loss = go.Figure()
-
-            train_loss = data['train_loss']
-            test_loss = data['test_loss']
-
-            fig_loss.add_trace(go.Scatter(x=list(range(len(train_loss))), y=train_loss, mode='lines', name='Train Loss'))
-            fig_loss.add_trace(go.Scatter(x=list(range(len(test_loss))), y=test_loss, mode='lines', name='Validation Loss'))
-            fig_loss.update_layout(
-                title='Model Loss',
-                xaxis=dict(title='Epoch'),
-                yaxis=dict(title='Loss'),
-                showlegend=True
-            )
-
-            fig_accuracy = go.Figure()
-
-            train_accuracy = data['train_accuracy']
-            test_accuracy = data['test_accuracy']
-
-            fig_accuracy.add_trace(go.Scatter(x=list(range(len(train_accuracy))), y=train_accuracy, mode='lines', name='Train Loss'))
-            fig_accuracy.add_trace(go.Scatter(x=list(range(len(test_accuracy))), y=test_accuracy, mode='lines', name='Validation Loss'))
-            fig_accuracy.update_layout(
-                title='Model Accuracy',
-                xaxis=dict(title='Epoch'),
-                yaxis=dict(title='Loss'),
-                showlegend=True
-            )
-
             return dbc.Row(
                 [
-                    dbc.Col(dcc.Graph(figure=fig_loss), width=6),
-                    dbc.Col(dcc.Graph(figure=fig_accuracy), width=6),
+                    dbc.Col(dcc.Graph(figure=lossView(data)), width=6),
+                    dbc.Col(dcc.Graph(figure=accuracyView(data)), width=6),
                 ]
             )
-        elif active_tab == "histogram":
+        elif active_tab == "performance":
             
             conf_matrix = data['conf_matrix']
+
+            print(conf_matrix)
             labels = data['labels']
-            # predicted_labels = data['predicted_labels']
 
+            lb_size = len(labels)
 
-            # lb_size = len(labels)
-
-            # new_conf_matrix = np.zeros((lb_size, lb_size), dtype=int)
-            # new_conf_matrix[:4, :4] = conf_matrix
-
-            # print(conf_matrix)
-
-            # print(new_conf_matrix)
+            num_columns = len(conf_matrix[0])
 
             fig = go.Figure()
 
@@ -351,8 +344,11 @@ def render_tab_content(active_tab, data):
             # df = px.data.medals_wide(indexed=True)
             # fig = px.imshow(df, text_auto=True)
 
-            # fig = ff.create_annotated_heatmap(conf_matrix, x=predicted_labels, y=labels, colorscale='Blues', aspect=True)
-            fig = px.imshow(conf_matrix, text_auto=True, color_continuous_scale='Blues', aspect="auto")
+            print(lb_size, num_columns)
+            if lb_size == num_columns:
+                fig = px.imshow(conf_matrix, x=labels, y=labels, text_auto=True, color_continuous_scale='Blues', aspect="auto")
+            else:
+                fig = px.imshow(conf_matrix, text_auto=True, color_continuous_scale='Blues', aspect="auto")
 
             fig.update_layout(
                 title='Confusion Matrix',
@@ -367,10 +363,10 @@ def render_tab_content(active_tab, data):
                     # dbc.Col(dcc.Graph(figure=data["hist_2"]), width=6),
                 ]
             )
-        elif active_tab == "bar":
+        elif active_tab == "trend_view":
             return html.Div([
                 html.H4('Interactive color selection with simple Dash example'),
-                dcc.Graph(figure=trendView()),
+                dcc.Graph(figure=trendView(data)),
             ])
 
     return "No tab selected"
@@ -411,22 +407,23 @@ def change_model_name(value):
 
 # https://dash.plotly.com/dash-core-components/datepickerrange
 @callback(
-    [Input('date_range_picker', 'start_date'),
-     Input('date_range_picker', 'end_date')]
+    [Input('date_range_picker_id', 'start_date'),
+     Input('date_range_picker_id', 'end_date')]
 )
 def change_date_range(start_date, end_date):
-    if start_date is not None and end_date is not None:
 
+    if start_date is not None:
         start_date_object = date.fromisoformat(start_date)
         start_date = start_date_object.strftime("%Y-%m-%d %H:%M:%S")
+        simulator_form_data["input_from_date"] = start_date
+        print("Start date=", start_date)
+
+    if end_date is not None:
 
         end_date_object = date.fromisoformat(end_date)
         end_date = end_date_object.strftime("%Y-%m-%d %H:%M:%S")
-
-        simulator_form_data["input_from_date"] = start_date
         simulator_form_data["input_to_date"] = end_date
-
-        print(start_date, end_date)
+        print("End Date=", end_date)
 
 is_mock = False
 # ------ API Actions ------------------

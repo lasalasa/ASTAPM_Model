@@ -18,6 +18,8 @@ from tensorflow.keras.regularizers import l2
 from tensorflow.keras.models import load_model
 
 import numpy as np
+import pandas as pd
+from collections import Counter
 
 import joblib
 
@@ -32,61 +34,6 @@ EMBEDDING_DIM = 100
 
 MAX_LENGTH = 300
 
-## Define X
-# def get_LSTM_X(df, max_length=300):
-
-#     # The maximum number of words to be used. (most frequent)
-    
-#     texts = df['narrative'].values
-
-#     tokenizer = Tokenizer(num_words=MAX_NB_WORDS)
-
-#     tokenizer.fit_on_texts(texts)
-
-#     word_index = tokenizer.word_index
-#     print('Found %s unique tokens.' % len(word_index))
-
-#     sequences = tokenizer.texts_to_sequences(texts)
-
-#     X = pad_sequences(sequences, maxlen=max_length)
-
-#     print('Shape of data tensor:', X.shape)
-#     return X
-
-## Define Y
-
-# def get_LSTM_Y(df):
-#     lstm_labels = df['HFACS_Category_Value_Predict'].values
-#     lstm_label_encoder = LabelEncoder()
-#     Y = lstm_label_encoder.fit_transform(lstm_labels)
-#     print('Shape of label tensor:', Y.shape)
-#     return lstm_label_encoder, Y
-
-# def get_X_Y_train_test(df):
-#     ## Text clean
-#     clean_df = df.reset_index(drop=True)
-#     clean_df['narrative'] = clean_df['narrative'].apply(clean_text)
-#     clean_df['narrative'] = clean_df['narrative'].str.replace('\d+', '')
-
-#     ## Tokenize
-#     # # Defining pre-processing parameters
-#     # max_len = 10000 
-#     # trunc_type = 'post'
-#     # padding_type = 'post'
-#     # oov_tok = '<OOV>' # out of vocabulary token
-#     # vocab_size = 500
-
-#     X = get_LSTM_X(clean_df, max_length=250)
-
-#     lstm_label_encoder, Y = get_LSTM_Y(clean_df)
-#     df['HFACS_Category_Value_Predict_Encode'] = Y
-
-#     ## Define Train & Test
-#     X_train, X_test, Y_train, Y_test = train_test_split(X,Y, test_size = 0.10, random_state = 42)
-#     print(X_train.shape,Y_train.shape)
-#     print(X_test.shape,Y_test.shape)
-#     return lstm_label_encoder, X, Y, X_train, X_test, Y_train, Y_test
-
 def pre_process_df(df, col_name):
 
     textPreprocessor = TextPreprocessor()
@@ -94,13 +41,13 @@ def pre_process_df(df, col_name):
     print("combined_narrative")
     df = textPreprocessor.combined_narrative(df)
     
-    print("counting_narrative")
-    # Step 2: Combine 'narrative_01' and 'narrative_02' into a single 'narrative' column
-    df = textPreprocessor.counting_narrative(df)
+    # print("counting_narrative")
+    # # Step 2: Combine 'narrative_01' and 'narrative_02' into a single 'narrative' column
+    # df = textPreprocessor.counting_narrative(df)
 
-    print("clean_narrative")
-    # Step 3: clean narrative
-    df = textPreprocessor.clean_narrative(df)
+    # print("clean_narrative")
+    # # Step 3: clean narrative
+    # df = textPreprocessor.clean_narrative(df)
 
     print("clean_feature")
     # Step 4: Clean factor_column_name
@@ -120,10 +67,13 @@ def pre_process_df(df, col_name):
     return df
 
 class LSTMModel:
-    def __init__(self, dfs=None, ds_name='asrs', sample_size=1000):
+    def __init__(self, dfs=None, ds_name='asrs', ls_version=1, sample_size=1000, max_length=300, max_nb_words=5000):
 
         self.ds_name = ds_name
         self.sample_size = sample_size
+        self.ls_version = ls_version
+        self.max_length = max_length
+        self.max_nb_words = max_nb_words
 
         factor_col_name = CoreUtils.get_constant()["FACTOR_COL_NAME"]
         self.factor_col_name = factor_col_name
@@ -133,6 +83,8 @@ class LSTMModel:
             dfs = self.get_data()        
             print("Data loaded")
         
+        print(dfs[ds_name])
+
         dfs = self.pre_process(dfs)
         self.dfs = dfs
         print("Pre processed")
@@ -149,22 +101,22 @@ class LSTMModel:
 
         print("Define X")
         texts = df['narrative'].values
-        tokenizer = Tokenizer(num_words=MAX_NB_WORDS)
+        tokenizer = Tokenizer(num_words=max_nb_words)
         tokenizer.fit_on_texts(texts)
         word_index = tokenizer.word_index
         print('Found %s unique tokens.' % len(word_index))
         sequences = tokenizer.texts_to_sequences(texts)
-        X = pad_sequences(sequences, maxlen=MAX_LENGTH)
+        X = pad_sequences(sequences, maxlen=max_length)
         self.X = X
 
         print('Shape of data tensor:', X.shape)
         
         model = Sequential()
-        model.add(Embedding(MAX_NB_WORDS, EMBEDDING_DIM, input_length=X.shape[1]))
-        model.add(SpatialDropout1D(0.3))
+        model.add(Embedding(MAX_NB_WORDS, EMBEDDING_DIM))
+        model.add(SpatialDropout1D(0.25))
         # model.add(LSTM(units=64, dropout=0.3, recurrent_dropout=0.3))
-        model.add(LSTM(units=64, return_sequences=True, dropout=0.3, recurrent_dropout=0.3))
-        model.add(LSTM(units=64, dropout=0.3, recurrent_dropout=0.3))
+        model.add(LSTM(units=64, return_sequences=True, dropout=0.25, recurrent_dropout=0.25))
+        model.add(LSTM(units=64, dropout=0.25, recurrent_dropout=0.25))
         # model.add(LSTM(units=64, dropout=0.2, recurrent_dropout=0.2))  # Add a second LSTM layer
         
         model.add(Dense(len(lstm_label_encoder.classes_), activation='softmax', kernel_regularizer=l2(0.001)))
@@ -178,31 +130,38 @@ class LSTMModel:
         ds_name_list = ds_name.split('_')
 
         print(ds_name_list)
-        dfs = {}
+        self.sample_size = self.sample_size * len(ds_name_list)
 
+        dfs = {}
+        dfs_list = []
         for ds_name_item in ds_name_list:
             df_item = CoreUtils.get_data(ds_name_item)
             dfs[ds_name_item] = df_item
-        
+            dfs_list.append(df_item)
+
+        dfs[ds_name] = pd.concat(dfs_list, axis=0).reset_index(drop=True)
+
         return dfs
     
     def pre_process(self, dfs):
         ds_name = self.ds_name
         sample_size = self.sample_size
+        ls_version = self.ls_version
         factor_col_name = self.factor_col_name
 
         df = dfs[ds_name]
 
         # 02. Label Spreading
-        print("start labelling")
-        modelLS = ModelLS(dfs, ds_name, 0)
-        df = modelLS.predict(df, sample_size)
-        print("Sampling size", df.shape)
+        print("Start labelling")
+        df = ModelLS.predict(df, ds_name, ls_version, sample_size)
+        print("Ladled Sampling size=", df.shape)
 
         print("start pre_process_df")
         df = pre_process_df(df, factor_col_name)
 
         dfs[ds_name] = df
+
+        print(df.head())
         return dfs
 
 
@@ -239,28 +198,31 @@ class LSTMModel:
     def evaluate(self):
         # Predict the probabilities for the test set
         model = self.model
+        ds_name = self.ds_name
+        X = self.X
         Y_test = self.Y_test
         X_test = self.X_test
+        labels = self.label_encoder.classes_
+
+        map_labels = self.label_encoder.fit_transform(labels)
 
         y_pred = model.predict(X_test)
 
         # Convert probabilities to class indices
         y_pred_classes = np.argmax(y_pred, axis=1)
 
-        conf_matrix = confusion_matrix(Y_test, y_pred_classes)
+        conf_matrix = confusion_matrix(Y_test, y_pred_classes, labels=map_labels)
 
         # Accuracy
         accuracy = accuracy_score(Y_test, y_pred_classes)
         print(f'Accuracy: {accuracy:.4f}')
         
-        report = classification_report(Y_test, y_pred_classes, output_dict=True)
+        report = classification_report(Y_test, y_pred_classes, labels=map_labels, output_dict=True)
 
         # Classification report for precision, recall, F1-score
-        print(classification_report(Y_test, y_pred_classes))
+        print(classification_report(Y_test, y_pred_classes, labels=map_labels))
 
         print(conf_matrix)
-
-        labels = self.label_encoder.classes_
 
         history = self.history
 
@@ -272,6 +234,33 @@ class LSTMModel:
 
         print(train_loss, test_loss)
 
+        df = self.dfs[ds_name]
+
+        train_data_label_value_count = df['HFACS_Category_Value_Predict'].value_counts().reset_index()
+
+        # Convert DataFrame to dictionary or list of records
+        train_data_label_value_count_dict = train_data_label_value_count.to_dict(orient='records')
+
+        # https://docs.python.org/3/library/collections.html#collections.Counter
+        all_words = [word for text in df['narrative'].values for word in text.split()]
+        word_counts = Counter(all_words)
+        common_words = word_counts.most_common(50)
+        word_count_labels, word_count_values = zip(*common_words)
+
+        narrative_word_count = df['narrative_word_count'].tolist()
+
+        predict_text = model.predict(X)
+        # Convert probabilities to class indices
+        predict_text_classes = np.argmax(predict_text, axis=1)
+
+        predict_text_label = self.label_encoder.inverse_transform(predict_text_classes)
+
+        df['lstm_predict_label'] = predict_text_label
+
+        print(df['date'])
+        
+        new_df = df.groupby('date')['lstm_predict_label'].value_counts().unstack().fillna(0)
+
         evaluation_result = {
             "accuracy": accuracy,
             "classification_report": report,
@@ -280,10 +269,17 @@ class LSTMModel:
             "train_loss": train_loss,
             "test_loss": test_loss,
             "train_accuracy": train_accuracy,
-            "test_accuracy": test_accuracy
+            "test_accuracy": test_accuracy,
+            "train_label_value_count": train_data_label_value_count_dict,
+            "train_word_count": {
+                "labels": word_count_labels,
+                "values": word_count_values
+            },
+            "train_narrative_word_count": narrative_word_count,
+            "sample_predict_view": new_df.to_dict(orient="index")
         }
 
-        print(evaluation_result)
+        # print(evaluation_result)
 
         return evaluation_result
 

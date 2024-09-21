@@ -38,6 +38,7 @@ class ModelTrainSchema(BaseModel):
     input_model_name: str
     input_from_date: str
     input_to_date: str
+    input_model_ls_version: int
 
     # feature_engineering: FeatureEngineeringType
 

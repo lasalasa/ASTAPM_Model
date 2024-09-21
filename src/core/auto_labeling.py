@@ -1,11 +1,13 @@
 import pandas as pd
-from .core_mappers import HFACS_DICTIONARY, AUTO_LABELING_DICTIONARY
+from .core_mappers import HFACS_DICTIONARY, AUTO_LABELING_DICTIONARY, AST_APM_DICTIONARY
 from .core_utils import CoreUtils
 
-def get_dic(ds_name, is_imbalance):
-    if is_imbalance:
+def get_dic(ds_name, imbalance_options):
+    is_merge_taxonomy = imbalance_options["is_merge_taxonomy"]
+    if is_merge_taxonomy:
         return [
-            HFACS_DICTIONARY['hfacs_balance'],
+            # HFACS_DICTIONARY['hfacs_balance'],
+            AST_APM_DICTIONARY,
             AUTO_LABELING_DICTIONARY[f'{ds_name}_balance']
         ]
     else:
@@ -16,33 +18,19 @@ def get_dic(ds_name, is_imbalance):
 
 class AutoLabeling:
 
-    def __init__(self, df, ds_name='asrs', is_imbalance=False):
+    def __init__(self, df, ds_name='asrs', imbalance_options={
+        "is_merge_taxonomy": False
+    }):
+        self.ds_name = ds_name
+        self.imbalance_options = imbalance_options
 
         factor_col_name = CoreUtils.get_constant()["FACTOR_COL_NAME"]
-        hfacs_dic, auto_label_dic = get_dic(ds_name, is_imbalance)
+        hfacs_dic, auto_label_dic = get_dic(ds_name, imbalance_options)
         
         self.factor_col_name = factor_col_name
         self.hfacs_dic = hfacs_dic
         self.auto_label_dic = auto_label_dic
         self.df = df
-
-    def __map_hf_asrs(self, factors):
-        hf_dic = self.auto_label_dic['HF_DICTIONARY']
-
-        # Convert to lowercase for consistent keyword matching
-        factors = str(factors).lower()
-
-        split_factors = factors.split(':')
-        if(len(split_factors) == 1):
-            # Only include Human factor, map with # Skill-based Errors TODO Need to improve
-            return 111 #112
-        
-        for keyword, mapping in hf_dic.items():
-            # print(keyword.lower(), '=>>>', factors)
-            if keyword.lower() in factors:  # Check if keyword is in the combined issues string
-                # print(keyword.lower(), '=>>>', factors)
-                return mapping
-        return -1
 
     # Function to map combined issues to HFACS based on keyword mappings
     def __map_hfacs(self, factors):
@@ -60,22 +48,6 @@ class AutoLabeling:
                 #     return self.__map_hf_asrs(factors)
                 return mapping
         return -1  # Default to unmapped if no match found
-    
-    # Function to map combined issues to HFACS based on keyword mappings
-    # def __map_hfacs_ntsb(self, factors):
-
-    #     pf_dic = self.auto_label_dic['PF_DICTIONARY']
-
-    #     # Convert to lowercase for consistent keyword matching
-    #     factors = str(factors).lower()
-
-    #     for keyword, mapping in keyword_mappings_ntsb.items():
-    #         # Check if keyword is in the factors string
-    #         if keyword.lower() in factors:
-    #             # print(keyword.lower(), '=>>>', factors)
-    #             return mapping
-    #     # Default to unmapped if no match found
-    #     return -1
 
     def do_auto_label(self, sample_size=0):
 

@@ -13,18 +13,34 @@ import seaborn as sns
 from .core_utils import CoreUtils
 from .text_processor import TextPreprocessor
 from .auto_labeling import AutoLabeling
+from src.extensions.os_extension import OsOperation
 
 #----------- Model Save/Load Func ----------
     # https://www.analyticsvidhya.com/blog/2023/02/how-to-save-and-load-machine-learning-models-in-python-using-joblib-library/
 def save_model_LS(model, vectorizer, label_encoder, unmapped_encoder, name):
     # Save both the model and vectorizer to a file
-    dump_name = f'model_LS_{name}.pkl'
+
+    PATH_PREFIX = f'data/model_store/{name}'
+
+    osOperation = OsOperation()
+    file_list = osOperation.get_dir_files(PATH_PREFIX)
+
+    next_version = len(file_list) + 1
+
+    dump_name = f'{PATH_PREFIX}/model_LS_{name}_{next_version}.pkl'
     joblib.dump((model, vectorizer, label_encoder, unmapped_encoder), dump_name)
     print(f"{name} Model and vectorizer saved successfully")
 
-def load_model_LS(name):
+def load_model_LS(name, version=0):
     # Load both the model and vectorizer from the file
-    dump_name = f'model_LS_{name}.pkl'
+
+    PATH_PREFIX = f'data/model_store/{name}'
+
+    if version == 0:
+        dump_name = f'{PATH_PREFIX}/model_LS_{name}_1.pkl'
+    else:
+        dump_name = f'{PATH_PREFIX}/model_LS_{name}_{version}.pkl'
+    
     model, vectorizer,label_encoder, unmapped_encoder = joblib.load(dump_name)
     print("Model and vectorizer loaded successfully")
     return model, vectorizer, label_encoder, unmapped_encoder
@@ -42,12 +58,15 @@ def show_confusion_matrix(model, X_test, y_test, label_encoder):
     # Predict the classes for the test set
     y_pred = model.predict(X_test)
 
+    label_classes = label_encoder.classes_
+    all_labels = label_encoder.fit_transform(label_classes)
+
     # Generate the confusion matrix
-    conf_matrix = confusion_matrix(y_test, y_pred)
+    conf_matrix = confusion_matrix(y_test, y_pred, labels=all_labels)
 
     # Plot the confusion matrix
     plt.figure(figsize=(10,8))
-    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=label_encoder.classes_, yticklabels=label_encoder.classes_)
+    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=label_classes, yticklabels=label_classes)
     plt.xlabel('Predicted Label')
     plt.ylabel('True Label')
     plt.title('Confusion Matrix')
@@ -56,10 +75,13 @@ def show_confusion_matrix(model, X_test, y_test, label_encoder):
 
 class ModelLS:
 
-    def __init__(self, dfs=None, ds_name='asrs', sample_size=0):
+    def __init__(self, dfs=None, ds_name='asrs', sample_size=0, options={
+        "is_merge_taxonomy": False
+    }):
 
         self.ds_name = ds_name
         self.sample_size = sample_size
+        self.options = options
 
         factor_col_name = CoreUtils.get_constant()["FACTOR_COL_NAME"]
         self.factor_col_name = factor_col_name
@@ -101,6 +123,8 @@ class ModelLS:
 
     def do_label(self):
         sample_size = self.sample_size
+        options = self.options
+
         ds_name = self.ds_name
         dfs = self.dfs.copy()
 
@@ -111,7 +135,7 @@ class ModelLS:
             ds_name_item_01 = ds_name_list[0]
             df = dfs[ds_name_item_01]
             
-            autoLabeling_01 = AutoLabeling(df, ds_name_item_01)
+            autoLabeling_01 = AutoLabeling(df, ds_name_item_01, options)
             df_labeled = autoLabeling_01.do_auto_label(sample_size)
             labeled_dfs.append(df_labeled)
 
@@ -119,7 +143,7 @@ class ModelLS:
 
             for ds_name_item in ds_name_list:
                 df_next = dfs[ds_name_item]
-                autoLabeling = AutoLabeling(df_next, ds_name_item)
+                autoLabeling = AutoLabeling(df_next, ds_name_item, options)
                 df_labeled_next = autoLabeling.do_auto_label(sample_size)
                 labeled_dfs.append(df_labeled_next)
 
@@ -128,7 +152,7 @@ class ModelLS:
             return pd.concat(labeled_dfs, axis=0).reset_index(drop=True)
 
         df = dfs[ds_name]
-        autoLabeling = AutoLabeling(df, ds_name)
+        autoLabeling = AutoLabeling(df, ds_name, options)
         df_labeled = autoLabeling.do_auto_label(sample_size)
         return df_labeled
 
@@ -139,11 +163,16 @@ class ModelLS:
         ls_df = self.df_labeled.copy()
         factor_column_name = self.factor_col_name
 
-        label_encoder, y = [self.label_encoder, self.Y] #get_Y_encoder(ls_df, 'HFACS_Category_Value')
+        print(self.Y)
+
+        label_encoder, y = [self.label_encoder, self.Y] 
+        #get_Y_encoder(ls_df, 'HFACS_Category_Value')
         unmapped_encoder = label_encoder.transform(['Unmapped'])[0]
-        
+
         # Set unlabeled data points to -1 (required by LabelSpreading)
         y[y == unmapped_encoder] = -1
+
+        print(unmapped_encoder, y)
 
         # Step 2: Vectorize the 'Combined_Factors' column using TF-IDF
         textPreprocessor = TextPreprocessor()
@@ -151,6 +180,8 @@ class ModelLS:
 
         # Step 3: Split the labeled data into train and test sets (for evaluation)
         X_train, X_test, y_train, y_test = train_test_split(X[y != -1], y[y != -1], test_size=0.2, random_state=42)
+
+        print(y_test)
 
         # Step 4: Create and fit the LabelSpreading model using ALL data (labeled + unlabeled)
         label_prop_model = LabelSpreading()
@@ -178,18 +209,21 @@ class ModelLS:
 
         save_model_LS(label_prop_model, vectorizer, label_encoder, unmapped_encoder, ds_name)
 
-    def predict(self, df: pd.DataFrame, sample_size=0):
+    @staticmethod
+    def predict(df: pd.DataFrame, ds_name='asrs', version=0, sample_size=0):
 
-        ds_name = self.ds_name
-        factor_col_name = self.factor_col_name
+        factor_col_name = CoreUtils.get_constant()["FACTOR_COL_NAME"]
 
-        model, vectorizer, label_encoder, unmapped_encoder = load_model_LS(ds_name)
+        model, vectorizer, label_encoder, unmapped_encoder = load_model_LS(ds_name, version)
 
         # New set of data for prediction
+        print("LS sample_size====", sample_size)
         if sample_size > 0:
             labeled_data =  df.tail(sample_size).copy()
         else:
             labeled_data =  df
+
+        print("Factors Null count", labeled_data[factor_col_name].isnull().sum())
 
         # Drop rows with NaN in 'Combined_Factors'
         labeled_data = labeled_data.dropna(subset=[factor_col_name])

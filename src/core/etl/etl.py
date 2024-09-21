@@ -1,5 +1,7 @@
 # code adapted from (Abc — Abstract Base Classes, n.d.)
 import os
+import pandas as pd
+
 from abc import ABC, abstractmethod
 
 from src.extensions.pd_extension import PdExtension
@@ -88,7 +90,7 @@ class ETL(ABC):
         print("Loading data...")
         # Save the main DataFrame
         main_df = self.transformed_data[self.ds_prefix]
-        self.save_data(main_df, self.ds_prefix)
+        # self.save_data(main_df, self.ds_prefix)
 
         # Save the narrative DataFrame
         narrative_df = self.transformed_data[self.narrative_table_name]
@@ -97,6 +99,11 @@ class ETL(ABC):
         # Save the factors DataFrame
         factors_df = self.transformed_data[self.factors_table_name]
         self.save_data(factors_df, self.factors_table_name)
+
+        combined_df = pd.merge(main_df, narrative_df, on='event_id', how='left')
+        combined_df = pd.merge(combined_df, factors_df, on='event_id', how='left')
+        self.save_data(combined_df, self.ds_prefix)
+
 
     def cleaned_data(self, df):
 

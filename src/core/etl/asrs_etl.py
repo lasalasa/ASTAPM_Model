@@ -10,21 +10,6 @@ from src.extensions.shutil_extension import FileOperation
 from src.config import settings
 from src.database import session_manager
 
-# TODO should move to ETL
-# df.fillna('', inplace=True)
-# df[df['contributing_factors'].str.contains(df['primary_problem'])==False]
-# columns_to_check = ['contributing_factors', 'primary_problem','human_factors']
-# df.dropna(thresh=len(columns_to_check) - 2, subset=columns_to_check, inplace=True)
-
-# Fill NaN in 'primary_problem' with the first item after splitting 'contributing_factors'
-# df['primary_problem'] = df['primary_problem'].fillna(df['contributing_factors'].str.split(';').str[0])
-
-# Fill NaN in 'primary_problem' based on 'human_factors'
-# df['primary_problem'] = df['primary_problem'].fillna('Human Factors')
-
-# df['contributing_factors'] = df['contributing_factors'].fillna(df['primary_problem'])
-# df['human_factors'] = df['human_factors'].fillna('no_hf')
-
 # Function to handle splitting and conversion
 def get_time(time_range):
     if pd.notnull(time_range) and time_range != '':
@@ -45,6 +30,55 @@ def get_time(time_range):
         return from_time, None 
     else:
         return None, None
+
+def combined_narrative(df):
+    df['narrative_02'] = df['narrative_02'].fillna('')
+
+    # Step 4: Combine 'narrative_01' and 'narrative_02' into a single 'narrative' column
+    # code adapted from GeeksforGeeks (2021)
+    df['narrative'] = df['narrative_01'].str.cat(df['narrative_02'], sep=' ', na_rep='')
+    # end of adapted code
+    return df
+
+def counting_narrative(df):
+    df['narrative_length'] = df['narrative'].apply(len)
+    # Count words in each narrative
+    df['narrative_word_count'] = df['narrative'].apply(lambda x: len(x.split()))
+
+    # Count sentences in each narrative
+    df['narrative_sentence_count'] = df['narrative'].apply(lambda x: len(x.split('. ')))
+    
+    return df
+
+def clean_narrative(df):
+
+    df = combined_narrative(df)
+    df = counting_narrative(df)
+
+    df.dropna(subset=['narrative'], inplace=True)
+
+    df = df[df['narrative_word_count'] > 0].copy()
+    return df
+
+def clean_feature(df: pd.DataFrame, feature_name):
+    df = df.dropna(subset=[feature_name])
+
+    return df
+
+def clean_event_factores(df):
+    # df = df.fillna('')
+
+    columns_to_check = ['contributing_factors', 'primary_problem','human_factors']
+    df.dropna(thresh=len(columns_to_check) - 2, subset=columns_to_check, inplace=True)
+
+    # Fill NaN in 'primary_problem' with the first item after splitting 'contributing_factors'
+    df['primary_problem'] = df['primary_problem'].fillna(df['contributing_factors'].str.split(';').str[0])
+
+    # Fill NaN in 'primary_problem' based on 'human_factors'
+    df['primary_problem'] = df['primary_problem'].fillna('Human Factors')
+
+    df['contributing_factors'] = df['contributing_factors'].fillna(df['primary_problem'])
+    return df
 
 def combine_event_factors(row):
     # # https://sparkbyexamples.com/pandas/pandas-concatenate-two-columns/
@@ -146,41 +180,6 @@ class AsrsEtl(ETL):
             print(f"Storing... {table_name}")
             pd_extension.save_to_db(data, table_name, "replace")
 
-    # async def transform_data(self):
-    #     print("Transforming data...")
-    #     ex_folder_path = self.main_ex_folder_path
-    #     metadata = await session_manager.get_metadata(self.ds_raw_db)
-        
-    #     all_data = {}
-
-    #     main_pd_Extension = self.main_pd_extension
-    #     pd_Extension = self.ds_pd_extension
-
-    #     os_operation = OsOperation()
-    #     file_operation = FileOperation()
-
-    #     file_operation.remove_folder(ex_folder_path)
-    #     os_operation.create_folder(ex_folder_path)
-
-    #     for table in metadata.tables.values():
-
-    #         table_name:str = table.name
-
-    #         df = pd_Extension.read_db(f"`{table_name}`")
-
-    #         # Remove rows/cols where all values are NaN
-    #         df_cleaned = self.cleaned_data(df)
-
-    #         print('df=', df.size, ' vs ', 'df_cleaned=', df_cleaned.size)
-
-    #         if not df_cleaned.empty:
-    #             table_name = table_name.lower().replace(' ', '_')
-    #             new_table_name = f"{self.ds_prefix}_{table_name}"
-    #             all_data[new_table_name] = df_cleaned
-    #             # main_pd_Extension.save_to_db(df_cleaned, new_table_name)
-
-    #     self.build_data(all_data)
-    
     def build_main_mada(self, raw_data):
 
         table_name = self.ds_prefix
@@ -223,6 +222,10 @@ class AsrsEtl(ETL):
             suffixes=('_01', '_02'))
         
         data_df.rename(columns={'ACN': 'event_id', 'Narrative_01': 'narrative_01', 'Narrative_02': 'narrative_02'}, inplace=True)
+
+        data_df = clean_narrative(data_df)
+
+        data_df = data_df.drop('narrative', axis=1)
 
         return data_df
 
@@ -277,7 +280,12 @@ class AsrsEtl(ETL):
 
         data_df.rename(columns={'ACN': 'event_id'}, inplace=True)
 
+        data_df = clean_event_factores(data_df)
+
         data_df['finding_description'] = data_df.apply(combine_event_factors, axis=1)
+
+        data_df = clean_feature(data_df, 'finding_description')
+        
         return data_df
 
 

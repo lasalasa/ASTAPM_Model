@@ -41,6 +41,24 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+# def get_data(self):
+#         ds_name = self.ds_name
+#         ds_name_list = ds_name.split('_')
+
+#         print(ds_name_list)
+#         self.sample_size = self.sample_size * len(ds_name_list)
+
+#         dfs = {}
+#         dfs_list = []
+#         for ds_name_item in ds_name_list:
+#             df_item = CoreUtils.get_data(ds_name_item)
+#             dfs[ds_name_item] = df_item
+#             dfs_list.append(df_item)
+
+#         dfs[ds_name] = pd.concat(dfs_list, axis=0).reset_index(drop=True)
+
+#         return dfs
+
 async def do_train(
     db_session: Session,
     input_data: MLSchemas.ModelTrainSchema
@@ -49,6 +67,7 @@ async def do_train(
     input_model_name = input_data.input_model_name
     input_from_date = input_data.input_from_date
     input_to_date = input_data.input_to_date
+    input_model_ls_version = input_data.input_model_ls_version
 
     try:
         print("input_data_source=", input_data_source)
@@ -70,11 +89,9 @@ async def do_train(
         safety_factors_table_name = f"{table_name}_safety_factors"
 
         query = text(f"""
-            SELECT * FROM {table_name} AS a
-            JOIN {narrative_table_name} AS b ON b.event_id = a.event_id
-            JOIN {safety_factors_table_name} AS c ON c.event_id = a.event_id
-            WHERE a.date BETWEEN :start_date AND :end_date
-            ORDER BY a.date
+            SELECT * FROM {table_name}
+            WHERE date BETWEEN :start_date AND :end_date
+            ORDER BY date
         """)
 
         print("query=", query)
@@ -98,23 +115,13 @@ async def do_train(
         # return rows
         dfs = {}
         dfs[input_data_source] = df
+
         if input_model_name == "SVM":
             pass
         
         elif input_model_name == "LSTM_Predictor":
-            # input_shape = (X_train.shape[1], 1)  # LSTM expects input in 3D shape (samples, timesteps, features)
-            # X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))
-            # X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
             
-            # model = LSTMModel(input_shape=input_shape)
-            # model.train(X_train, y_train)
-            # metrics = model.evaluate(X_test, y_test)
-            # model.save("lstm_model.h5")
-
-            model_LS = ModelLS(dfs, ds_name=input_data_source)
-            model_LS.train()
-            
-            model_LSTM = LSTMModel(dfs, ds_name=input_data_source)
+            model_LSTM = LSTMModel(dfs, ds_name=input_data_source, ls_version=input_model_ls_version, sample_size=0)
             model_LSTM.train()
             evaluation_report = model_LSTM.evaluate()
         

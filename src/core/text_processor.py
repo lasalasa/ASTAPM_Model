@@ -41,24 +41,24 @@ class TextPreprocessor:
         # end of adapted code
         return df
 
-    def counting_narrative(self, df):
-        df['narrative_length'] = df['narrative'].apply(len)
-        # Count words in each narrative
-        df['narrative_word_count'] = df['narrative'].apply(lambda x: len(x.split()))
+    # def counting_narrative(self, df):
+    #     df['narrative_length'] = df['narrative'].apply(len)
+    #     # Count words in each narrative
+    #     df['narrative_word_count'] = df['narrative'].apply(lambda x: len(x.split()))
 
-        # Count sentences in each narrative
-        df['narrative_sentence_count'] = df['narrative'].apply(lambda x: len(x.split('. ')))
+    #     # Count sentences in each narrative
+    #     df['narrative_sentence_count'] = df['narrative'].apply(lambda x: len(x.split('. ')))
         
-        return df
+    #     return df
 
-    def clean_narrative(self, df):
-        df.dropna(subset=['narrative'], inplace=True)
+    # def clean_narrative(self, df):
+    #     df.dropna(subset=['narrative'], inplace=True)
 
-        df = df[df['narrative_word_count'] > 0]
-        return df
+    #     df = df[df['narrative_word_count'] > 0].copy()
+    #     return df
 
     def clean_feature(self, df: pd.DataFrame, feature_name):
-        df.dropna(subset=[feature_name], inplace=True)
+        df = df.dropna(subset=[feature_name])
 
         return df
 

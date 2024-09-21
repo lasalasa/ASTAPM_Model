@@ -12,6 +12,40 @@ from .etl import ETL
 from src.config import settings
 from src.database import session_manager
 
+def combined_narrative(df):
+    df['narrative_02'] = df['narrative_02'].fillna('')
+
+    # Step 4: Combine 'narrative_01' and 'narrative_02' into a single 'narrative' column
+    # code adapted from GeeksforGeeks (2021)
+    df['narrative'] = df['narrative_01'].str.cat(df['narrative_02'], sep=' ', na_rep='')
+    # end of adapted code
+    return df
+
+def counting_narrative(df):
+    df['narrative_length'] = df['narrative'].apply(len)
+    # Count words in each narrative
+    df['narrative_word_count'] = df['narrative'].apply(lambda x: len(x.split()))
+
+    # Count sentences in each narrative
+    df['narrative_sentence_count'] = df['narrative'].apply(lambda x: len(x.split('. ')))
+    
+    return df
+
+def clean_narrative(df):
+
+    df = combined_narrative(df)
+    df = counting_narrative(df)
+
+    df.dropna(subset=['narrative'], inplace=True)
+
+    df = df[df['narrative_word_count'] > 0].copy()
+    return df
+
+def clean_feature(df: pd.DataFrame, feature_name):
+    df = df.dropna(subset=[feature_name])
+
+    return df
+
 class NtsbEtl(ETL):
 
     def __init__(self, data_source):
@@ -87,55 +121,6 @@ class NtsbEtl(ETL):
                 print(e)
                 print(f'\n\n ############## ############## ############## \n\n' )
 
-    # async def transform_data(self):
-    #     print("Transforming data...")
-    #     ex_folder_path = self.main_ex_folder_path
-    #     metadata = await session_manager.get_metadata(self.ds_raw_db)
-        
-    #     all_data = {}
-
-    #     main_pd_Extension = self.main_pd_extension
-    #     pd_Extension = self.ds_pd_extension
-
-    #     os_operation = OsOperation()
-    #     file_operation = FileOperation()
-
-    #     file_operation.remove_folder(ex_folder_path)
-    #     os_operation.create_folder(ex_folder_path)
-
-    #     for table in metadata.tables.values():
-
-    #         table_name:str = table.name
-
-    #         df = pd_Extension.read_db(f"`{table_name}`")
-
-    #         # Remove rows/cols where all values are NaN
-    #         df_cleaned = self.cleaned_data(df)
-
-    #         print('df=', df.size, ' vs ', 'df_cleaned=', df_cleaned.size)
-
-    #         if not df_cleaned.empty:
-    #             table_name = table_name.lower().replace(' ', '_')
-    #             new_table_name = f"{self.ds_prefix}_{table_name}"
-    #             all_data[new_table_name] = df_cleaned
-    #             # main_pd_Extension.save_to_db(df_cleaned, f"{ds_name.lower()}_{new_table_name}", 'replace')
-
-    #     self.build_data(all_data)
-
-    # async def load_data(self):
-    #     print("Loading data...")
-    #     # Save the main DataFrame
-    #     main_df = self.transformed_data[self.ds_prefix]
-    #     self.save_data(main_df, self.ds_prefix)
-
-    #     # Save the narrative DataFrame
-    #     narrative_df = self.transformed_data[self.narrative_table_name]
-    #     self.save_data(narrative_df, self.narrative_table_name)
-
-    #     # Save the factors DataFrame
-    #     factors_df = self.transformed_data[self.factors_table_name]
-    #     self.save_data(factors_df, self.factors_table_name)
-
     def build_main_mada(self, raw_data):
 
         table_name = self.ds_prefix
@@ -143,8 +128,15 @@ class NtsbEtl(ETL):
 
         data_df.rename(columns={'ev_id': 'event_id', 'ev_date': 'date', 'ev_year': 'year', 'ev_month': 'month', 'ev_country': 'country', 'ev_state': 'state'}, inplace=True)
 
+        # Assuming year and month are integer columns
+        data_df['year'] = data_df['year'].astype(int)
+        data_df['month'] = data_df['month'].astype(int)
+
+        # Create a date column, assuming day = 1 (as day is not provided)
+        data_df['date'] = pd.to_datetime(data_df[['year', 'month']].assign(day=1))
+
         # https://pandas.pydata.org/docs/reference/api/pandas.to_datetime.html
-        data_df['date'] = pd.to_datetime(data_df['date'], format='%d/%m/%y %H:%M:%S', errors='coerce')
+        # data_df['date'] = pd.to_datetime(data_df['date'], format='%d/%m/%y %H:%M:%S', errors='coerce')
 
         print(data_df['date'].head())
 
@@ -161,6 +153,10 @@ class NtsbEtl(ETL):
                         on='ev_id', how='left')
         
         data_df.rename(columns={'ev_id': 'event_id', 'narr_accp': 'narrative_01', 'narr_accp_2': 'narrative_02'}, inplace=True)
+
+        data_df = clean_narrative(data_df)
+
+        data_df = data_df.drop('narrative', axis=1)
 
         return data_df
 
@@ -180,6 +176,8 @@ class NtsbEtl(ETL):
             # data_df.rename(columns={'finding_description': 'primary_problem'}, inplace=True)
 
         data_df.rename(columns={'ev_id': 'event_id'}, inplace=True)
+
+        data_df = clean_feature(data_df, 'finding_description')
 
         return data_df
 
