@@ -33,14 +33,14 @@ from web.pages.constant import mock_data
 dash.register_page(__name__, name='Simulator', title='AST-APM | Simulator')
 
 end_date = date(2023, 12, 31)
-start_date = end_date - datetime.timedelta(days=365*5)
+start_date = end_date - datetime.timedelta(days=365*1)
 
 simulator_form_data = {
     "input_data_source": "ASRS",
     "input_model_name": "LSTM_Predictor",
     "input_from_date": start_date.strftime("%Y-%m-%d %H:%M:%S"),
     "input_to_date": end_date.strftime("%Y-%m-%d %H:%M:%S"),
-    "input_model_ls_version": 2
+    "input_model_ls_version": 1
 }
 
 source_selector = dbc.Select(

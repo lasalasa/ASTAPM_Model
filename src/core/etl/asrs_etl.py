@@ -99,11 +99,33 @@ def combine_event_factors(row):
         return primary_problem
 
     # For other primary problems
+    # elif primary_problem == "Aircraft":
+    #     human_factors = row['human_factors'] if pd.notnull(row['human_factors']) else ''
+        
+    #     if human_factors is not '':
+    #         human_factors = row['human_factors'] if pd.notnull(row['human_factors']) else ''
+    #         anomaly = row['event_anomaly'] if pd.notnull(row['event_anomaly']) else ''
+            
+    #         if human_factors and anomaly:
+    #             return f"{primary_problem}:{human_factors}:{anomaly}".rstrip(':')
+    #     else:
+    #         aircraft_component = row['aircraft_component'] if pd.notnull(row['aircraft_component']) else ''
+    #         problem = row['aircraft_component_problem'] if pd.notnull(row['aircraft_component_problem']) else ''
+    #         anomaly = row['event_anomaly'] if pd.notnull(row['event_anomaly']) else ''
+            
+    #         if aircraft_component and problem and anomaly:
+    #             return f"{primary_problem}:{aircraft_component}:{problem}:{anomaly}".rstrip(':')
+    #     return primary_problem
     else:
+        human_factors = row['human_factors'] if pd.notnull(row['human_factors']) else ''
         aircraft_component = row['aircraft_component'] if pd.notnull(row['aircraft_component']) else ''
         problem = row['aircraft_component_problem'] if pd.notnull(row['aircraft_component_problem']) else ''
         anomaly = row['event_anomaly'] if pd.notnull(row['event_anomaly']) else ''
         
+        if human_factors and aircraft_component and problem and anomaly:
+            print(f'----={primary_problem}>{human_factors}')
+            return f"{human_factors}:{aircraft_component}:{problem}:{anomaly}".rstrip(':')
+
         if aircraft_component and problem and anomaly:
             return f"{primary_problem}:{aircraft_component}:{problem}:{anomaly}".rstrip(':')
         return primary_problem
@@ -285,7 +307,7 @@ class AsrsEtl(ETL):
         data_df['finding_description'] = data_df.apply(combine_event_factors, axis=1)
 
         data_df = clean_feature(data_df, 'finding_description')
-        
+
         return data_df
 
 

@@ -41,15 +41,15 @@ class TextPreprocessor:
         # end of adapted code
         return df
 
-    # def counting_narrative(self, df):
-    #     df['narrative_length'] = df['narrative'].apply(len)
-    #     # Count words in each narrative
-    #     df['narrative_word_count'] = df['narrative'].apply(lambda x: len(x.split()))
+    def counting_narrative(self, df):
+        df['narrative_length'] = df['narrative'].apply(len)
+        # Count words in each narrative
+        df['narrative_word_count'] = df['narrative'].apply(lambda x: len(x.split()))
 
-    #     # Count sentences in each narrative
-    #     df['narrative_sentence_count'] = df['narrative'].apply(lambda x: len(x.split('. ')))
+        # Count sentences in each narrative
+        df['narrative_sentence_count'] = df['narrative'].apply(lambda x: len(x.split('. ')))
         
-    #     return df
+        return df
 
     # def clean_narrative(self, df):
     #     df.dropna(subset=['narrative'], inplace=True)

@@ -41,24 +41,6 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# def get_data(self):
-#         ds_name = self.ds_name
-#         ds_name_list = ds_name.split('_')
-
-#         print(ds_name_list)
-#         self.sample_size = self.sample_size * len(ds_name_list)
-
-#         dfs = {}
-#         dfs_list = []
-#         for ds_name_item in ds_name_list:
-#             df_item = CoreUtils.get_data(ds_name_item)
-#             dfs[ds_name_item] = df_item
-#             dfs_list.append(df_item)
-
-#         dfs[ds_name] = pd.concat(dfs_list, axis=0).reset_index(drop=True)
-
-#         return dfs
-
 async def do_train(
     db_session: Session,
     input_data: MLSchemas.ModelTrainSchema
@@ -71,50 +53,86 @@ async def do_train(
 
     try:
         print("input_data_source=", input_data_source)
-        result = await db_session.execute(select(DSModels.DataSource).where(DSModels.DataSource.ds_name == input_data_source))
-        data_source = result.scalars().first()
-        
-        if data_source is None:
-            return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Data source not found")
-        
+
+        input_data_source_list = input_data_source.split('_')
+
+        print("data_source_list=",input_data_source_list)
+
         result = await db_session.execute(select(MLModels.MachineLearningModel).filter(MLModels.MachineLearningModel.ml_model_name == input_model_name))
         ml_model = result.scalars().first()
         
         if ml_model is None:
             return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ML model not found")
 
-        input_data_source = input_data_source.lower()
-        table_name = input_data_source
-        narrative_table_name = f"{table_name}_narrative"
-        safety_factors_table_name = f"{table_name}_safety_factors"
+        dfs = {}
+        dfs_list = []
+        for ds_name_item in input_data_source_list:
 
-        query = text(f"""
-            SELECT * FROM {table_name}
-            WHERE date BETWEEN :start_date AND :end_date
-            ORDER BY date
-        """)
+            result = await db_session.execute(select(DSModels.DataSource).where(DSModels.DataSource.ds_name == ds_name_item))
+            data_source = result.scalars().first()
+            
+            if data_source is None:
+                return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Data source not found")
 
-        print("query=", query)
+            input_data_source = input_data_source.lower()
+            table_name = input_data_source
+            # narrative_table_name = f"{table_name}_narrative"
+            # safety_factors_table_name = f"{table_name}_safety_factors"
 
-        # Execute the query with parameters
-        result = await db_session.execute(query, {
-            "start_date": input_from_date, #'2023-01-01 00:00:00',
-            "end_date": input_to_date # '2023-01-31 23:59:59'
-        })
+            query = text(f"""
+                SELECT * FROM {ds_name_item}
+                WHERE date BETWEEN :start_date AND :end_date
+                ORDER BY date
+            """)
+            print("query=", query)
 
-        # Fetch all results, if needed
-        rows = result.mappings().all()  # Fetch all rows as dictionaries
+            # Execute the query with parameters
+            result = await db_session.execute(query, {
+                "start_date": input_from_date, #'2023-01-01 00:00:00',
+                "end_date": input_to_date # '2023-01-31 23:59:59'
+            })
 
-        if not rows:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Data not found")
+            # Fetch all results, if needed
+            rows = result.mappings().all()  # Fetch all rows as dictionaries
 
-        df = pd.DataFrame(rows)
+            if not rows:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Data not found")
 
-        print(input_model_name, "Sample Size=", df.shape)
+            df_item = pd.DataFrame(rows)
+            dfs[ds_name_item] = df_item
+            dfs_list.append(df_item)
+            print(input_model_name, "Sample Size=", df_item.shape)
+
+
+        dfs[input_data_source] = pd.concat(dfs_list, axis=0).reset_index(drop=True)
+
+        # query = text(f"""
+        #     SELECT * FROM {table_name}
+        #     WHERE date BETWEEN :start_date AND :end_date
+        #     ORDER BY date
+        # """)
+
+        # print("query=", query)
+
+        # # Execute the query with parameters
+        # result = await db_session.execute(query, {
+        #     "start_date": input_from_date, #'2023-01-01 00:00:00',
+        #     "end_date": input_to_date # '2023-01-31 23:59:59'
+        # })
+
+        # # Fetch all results, if needed
+        # rows = result.mappings().all()  # Fetch all rows as dictionaries
+
+        # if not rows:
+        #     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Data not found")
+
+        # df = pd.DataFrame(rows)
+
+        # print(input_model_name, "Sample Size=", df.shape)
 
         # return rows
-        dfs = {}
-        dfs[input_data_source] = df
+        # dfs = {}
+        # dfs[input_data_source] = df
 
         if input_model_name == "SVM":
             pass
@@ -128,7 +146,7 @@ async def do_train(
         else:
             raise HTTPException(status_code=400, detail="Unsupported model type")
         
-        print(evaluation_report)
+        # print(evaluation_report)
 
         return evaluation_report
         # return {"model_type": "LSTM_Predictor", "metrics": metrics}

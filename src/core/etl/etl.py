@@ -91,17 +91,27 @@ class ETL(ABC):
         # Save the main DataFrame
         main_df = self.transformed_data[self.ds_prefix]
         # self.save_data(main_df, self.ds_prefix)
+        print("main_df=", main_df.shape)
 
         # Save the narrative DataFrame
         narrative_df = self.transformed_data[self.narrative_table_name]
+        # Keep the first occurrence for each event_id in narrative_df and factors_df
+        narrative_df = narrative_df.drop_duplicates(subset='event_id', keep='first')
         self.save_data(narrative_df, self.narrative_table_name)
+        print("narrative_df=", narrative_df.shape)
 
         # Save the factors DataFrame
         factors_df = self.transformed_data[self.factors_table_name]
+        factors_df = factors_df.drop_duplicates(subset='event_id', keep='first')
         self.save_data(factors_df, self.factors_table_name)
+        print("factors_df=", factors_df.shape)
 
         combined_df = pd.merge(main_df, narrative_df, on='event_id', how='left')
+        print("combined_df=", combined_df.shape)
+
         combined_df = pd.merge(combined_df, factors_df, on='event_id', how='left')
+        print("combined_df=", combined_df.shape)
+
         self.save_data(combined_df, self.ds_prefix)
 
 
