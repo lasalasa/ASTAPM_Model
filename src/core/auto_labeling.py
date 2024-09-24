@@ -1,4 +1,5 @@
 import pandas as pd
+
 from .core_mappers import HFACS_DICTIONARY, AUTO_LABELING_DICTIONARY, AST_APM_DICTIONARY
 from .core_utils import CoreUtils
 
@@ -41,45 +42,38 @@ class AutoLabeling:
         factors = str(factors).lower()
 
         for keyword, mapping in pf_dic.items():
-            if keyword.lower() in factors:  # Check if keyword is in the combined issues string
+             # Check if keyword is in the combined issues string
+            if keyword.lower() in factors:
                 # print(keyword.lower(), '=>>>', factors)
-                # if(mapping == 11):
-                #     # print(mapping)
-                #     return self.__map_hf_asrs(factors)
                 return mapping
-        return -1  # Default to unmapped if no match found
+        # Default to unmapped if no match found
+        return -1
 
     def do_auto_label(self, sample_size=0):
 
-        # df_tail = df.tail(sample_size).copy()
-
         factor_col_name = self.factor_col_name
         df = self.df
+        df_size = df.shape[0]
         hfacs_dic = self.hfacs_dic
 
-        if sample_size > 0:
+        if sample_size > 0 and df_size > sample_size:
             df_tail =  df.sample(n=sample_size, random_state=42)
         else:
             df_tail = df
             
-        print('sample_size=', df_tail.shape)
+        print('AutoLabeling sample_size=', df_tail.shape)
         
         df_tail.replace('', pd.NA, inplace=True)
-        # print_column = ['ACN'] + factors_column
 
-        # df_tail[print_column].value_counts()
-        # df_tail.isnull().sum()
-
-        # Load the dataset (update the file path as needed)
         data = df_tail.copy()
-        # Apply the function to each 'Combined_Issues' row and map to HFACS
-        data['HFACS_Category_Index'] = data[factor_col_name].apply(self.__map_hfacs)
 
+        # Apply the function to each 'finding_factors' row and map to HFACS
+        data['HFACS_Category_Index'] = data[factor_col_name].apply(self.__map_hfacs)
         # Split the 'HFACS_Mapped' into two new columns: 'HFACS_Category' and 'HFACS_Level'
         data['HFACS_Category_Value'] = data['HFACS_Category_Index'].apply(lambda x: hfacs_dic[x][3])
         data['HFACS_Level'] = data['HFACS_Category_Index'].apply(lambda x: hfacs_dic[x][0])
 
-        # # Summarize the mapped HFACS categories and levels
+        # Summarize the mapped HFACS categories
         hfacs_summary = data.groupby(['HFACS_Category_Value']).size().reset_index(name='Count')
         print(hfacs_summary)
         return data

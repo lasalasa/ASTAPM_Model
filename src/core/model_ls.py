@@ -6,7 +6,6 @@ from sklearn.metrics import confusion_matrix
 import joblib
 import numpy as np
 import pandas as pd
-
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -16,7 +15,6 @@ from .auto_labeling import AutoLabeling
 from src.extensions.os_extension import OsOperation
 
 #----------- Model Save/Load Func ----------
-    # https://www.analyticsvidhya.com/blog/2023/02/how-to-save-and-load-machine-learning-models-in-python-using-joblib-library/
 def save_model_LS(model, vectorizer, label_encoder, unmapped_encoder, name):
     # Save both the model and vectorizer to a file
 
@@ -28,7 +26,10 @@ def save_model_LS(model, vectorizer, label_encoder, unmapped_encoder, name):
     next_version = len(file_list) + 1
 
     dump_name = f'{PATH_PREFIX}/model_LS_{name}_{next_version}.pkl'
+    
+    # code adapted from Sharma (2023)
     joblib.dump((model, vectorizer, label_encoder, unmapped_encoder), dump_name)
+    # end of adapted code
     print(f"{name} Model and vectorizer saved successfully")
 
 def load_model_LS(name, version=0):
@@ -41,7 +42,9 @@ def load_model_LS(name, version=0):
     else:
         dump_name = f'{PATH_PREFIX}/model_LS_{name}_{version}.pkl'
     
+    # code adapted from Sharma (2023)
     model, vectorizer,label_encoder, unmapped_encoder = joblib.load(dump_name)
+    # end of adapted code
     print("Model and vectorizer loaded successfully")
     return model, vectorizer, label_encoder, unmapped_encoder
 #----------- Model Save/Load Func ----------
@@ -92,9 +95,7 @@ class ModelLS:
         
         self.dfs = dfs
 
-        # autoLabeling = AutoLabeling(df.copy(), ds_name)
         df_labeled = self.do_label()
-        #autoLabeling.do_auto_label(5000)
 
         df_labeled = df_labeled.dropna(subset=['HFACS_Category_Value', factor_col_name])
 
@@ -119,7 +120,6 @@ class ModelLS:
             dfs[ds_name_item] = df_item
         
         return dfs
-
 
     def do_label(self):
         sample_size = self.sample_size
@@ -146,8 +146,6 @@ class ModelLS:
                 autoLabeling = AutoLabeling(df_next, ds_name_item, options)
                 df_labeled_next = autoLabeling.do_auto_label(sample_size)
                 labeled_dfs.append(df_labeled_next)
-
-                # df_labeled = pd.concat([df_labeled, df_labeled_next], axis=0).reset_index(drop=True)
             
             return pd.concat(labeled_dfs, axis=0).reset_index(drop=True)
 
@@ -156,38 +154,35 @@ class ModelLS:
         df_labeled = autoLabeling.do_auto_label(sample_size)
         return df_labeled
 
-    #----------- Model Train/Predict Func---------
+    # Model Train
     def train(self):
 
         ds_name = self.ds_name
         ls_df = self.df_labeled.copy()
         factor_column_name = self.factor_col_name
 
-        print(self.Y)
+        # print(self.Y)
 
         label_encoder, y = [self.label_encoder, self.Y] 
-        #get_Y_encoder(ls_df, 'HFACS_Category_Value')
         unmapped_encoder = label_encoder.transform(['Unmapped'])[0]
 
         # Set unlabeled data points to -1 (required by LabelSpreading)
         y[y == unmapped_encoder] = -1
 
-        print(unmapped_encoder, y)
+        # print(unmapped_encoder, y)
 
-        # Step 2: Vectorize the 'Combined_Factors' column using TF-IDF
+        # Vectorize the 'Combined_Factors' column using TF-IDF
         textPreprocessor = TextPreprocessor()
-        vectorizer, X,  = textPreprocessor.tfidf_vectorization(ls_df, factor_column_name) #get_X_vec(ls_df, factor_column_name)
+        vectorizer, X,  = textPreprocessor.tfidf_vectorization(ls_df, factor_column_name) 
 
-        # Step 3: Split the labeled data into train and test sets (for evaluation)
+        # Split the labeled data into train and test sets (for evaluation)
         X_train, X_test, y_train, y_test = train_test_split(X[y != -1], y[y != -1], test_size=0.2, random_state=42)
 
-        print(y_test)
-
-        # Step 4: Create and fit the LabelSpreading model using ALL data (labeled + unlabeled)
+        # Create and fit the LabelSpreading model using ALL data (labeled + unlabeled)
         label_prop_model = LabelSpreading()
         label_prop_model.fit(X, y)
 
-        # Step 5: Make predictions on the test set (only labeled data for evaluation)
+        # Make predictions on the test set (only labeled data for evaluation)
         y_test_predict = label_prop_model.predict(X_test)
         accuracy = accuracy_score(y_test, y_test_predict)
         print("Accuracy on test data:", accuracy)
@@ -195,7 +190,7 @@ class ModelLS:
         # Optionally show confusion matrix
         show_confusion_matrix(label_prop_model, X_test, y_test, label_encoder)
 
-        # Step 6: Predict the labels for the full dataset (including unlabeled data)
+        # Predict the labels for the full dataset (including unlabeled data)
         y_full_predict = label_prop_model.predict(X)
 
         # Handle -1 predictions by replacing them with 'Unmapped'
@@ -207,8 +202,10 @@ class ModelLS:
         # Add the predicted labels back to the DataFrame
         ls_df['HFACS_Category_Value_Predict'] = y_decoded
 
+        # Save Model/Vectorizer and label_encoder
         save_model_LS(label_prop_model, vectorizer, label_encoder, unmapped_encoder, ds_name)
 
+    # Model predict function
     @staticmethod
     def predict(df: pd.DataFrame, ds_name='asrs', version=0, sample_size=0):
 
@@ -225,11 +222,10 @@ class ModelLS:
 
         print("Factors Null count", labeled_data[factor_col_name].isnull().sum())
 
-        # Drop rows with NaN in 'Combined_Factors'
+        # Drop rows with NaN in 'finding_factors'
         labeled_data = labeled_data.dropna(subset=[factor_col_name])
 
         # Vectorize the new set of data
-        # X_vec = get_LS_X(labeled_data)
         X_vec = vectorizer.transform(labeled_data[factor_col_name])  
 
         # Predict using the trained LabelSpreading model
@@ -246,4 +242,6 @@ class ModelLS:
         labeled_data['HFACS_Category_Value_Predict'] = y_decoded
 
         return labeled_data
-    #----------- Model Train/Predict Func---------
+
+
+    # https://www.analyticsvidhya.com/blog/2023/02/how-to-save-and-load-machine-learning-models-in-python-using-joblib-library/

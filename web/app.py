@@ -34,9 +34,6 @@ app.layout = dbc.Container([
     dcc.Store(id='browser-memo', data=dict(), storage_type='session')
 ], fluid=True)
 
-# app.layout = html.Div([dcc.Location(id="url"), sidebar, content])
-
-# add callback for toggling the collapse on small screens
 @app.callback(
     Output("navbar-collapse", "is_open"),
     [Input("navbar-toggler", "n_clicks")],

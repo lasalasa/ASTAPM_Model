@@ -1,16 +1,14 @@
+# Outer Service Module
 import os
 import pandas as pd
 
+# Inner Service Module
 from .etl import ETL
-
 from src.extensions.pd_extension import PdExtension
 from src.extensions.os_extension import OsOperation
 from src.extensions.shutil_extension import FileOperation
 
-from src.config import settings
-from src.database import session_manager
-
-# Function to handle splitting and conversion
+# Standardize Time format
 def get_time(time_range):
     if pd.notnull(time_range) and time_range != '':
         time_split = time_range.split('-')
@@ -99,23 +97,6 @@ def combine_event_factors(row):
         return primary_problem
 
     # For other primary problems
-    # elif primary_problem == "Aircraft":
-    #     human_factors = row['human_factors'] if pd.notnull(row['human_factors']) else ''
-        
-    #     if human_factors is not '':
-    #         human_factors = row['human_factors'] if pd.notnull(row['human_factors']) else ''
-    #         anomaly = row['event_anomaly'] if pd.notnull(row['event_anomaly']) else ''
-            
-    #         if human_factors and anomaly:
-    #             return f"{primary_problem}:{human_factors}:{anomaly}".rstrip(':')
-    #     else:
-    #         aircraft_component = row['aircraft_component'] if pd.notnull(row['aircraft_component']) else ''
-    #         problem = row['aircraft_component_problem'] if pd.notnull(row['aircraft_component_problem']) else ''
-    #         anomaly = row['event_anomaly'] if pd.notnull(row['event_anomaly']) else ''
-            
-    #         if aircraft_component and problem and anomaly:
-    #             return f"{primary_problem}:{aircraft_component}:{problem}:{anomaly}".rstrip(':')
-    #     return primary_problem
     else:
         human_factors = row['human_factors'] if pd.notnull(row['human_factors']) else ''
         aircraft_component = row['aircraft_component'] if pd.notnull(row['aircraft_component']) else ''
@@ -201,6 +182,19 @@ class AsrsEtl(ETL):
 
             print(f"Storing... {table_name}")
             pd_extension.save_to_db(data, table_name, "replace")
+
+    def cleaned_data(self, df):
+
+        # Return a new Index with elements of index not in other.
+        columns_to_consider = df.columns.difference(['ACN'])
+
+        # Remove rows where all values are NaN
+        df_cleaned = df.dropna(how='all', subset=columns_to_consider)
+
+        # Remove col where all values are NaN
+        df_cleaned = df_cleaned.dropna(axis=1, how='all')
+
+        return df_cleaned
 
     def build_main_mada(self, raw_data):
 

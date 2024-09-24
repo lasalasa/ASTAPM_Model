@@ -99,5 +99,5 @@ https://medium.com/@joshuale/a-practical-guide-to-python-project-structure-and-p
 
 FastAPI: https://fastapi.tiangolo.com/#example
 
-
+https://neptune.ai/blog/text-classification-tips-and-tricks-kaggle-competitions
 https://andreantonacci.github.io/aviation-accidents/

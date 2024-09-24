@@ -127,7 +127,7 @@ AUTO_LABELING_DICTIONARY = {
         "Human Factors:Human-Machine Interface": 212, 
         
         # Human Factors
-         "Human Factors:Fatigue": 221, 
+        "Human Factors:Fatigue": 221, 
         "Human Factors:Physiological - Other": 221,
         "Human Factors:Situational Awareness": 221, 
         "Human Factors:Time Pressure": 221,  

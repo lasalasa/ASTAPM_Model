@@ -1,9 +1,5 @@
 import os
-import shutil
-import csv
-import sys
 
-import pandas as pd
 from datetime import datetime
 
 class OsOperation:
@@ -16,10 +12,11 @@ class OsOperation:
         except Exception as e:
             print(f"An error occurred (create_folder): {e}")
 
-    # https://www.geeksforgeeks.org/python-loop-through-folders-and-files-in-directory/
     def get_dir_files(self, folder_path):
         try:
+            # code adapted from GeeksforGeeks (2024)
             file_name_list = os.listdir(folder_path)
+            # end of adapted code
             sorted_file_name_list = sorted(file_name_list)
             return sorted_file_name_list
         except Exception as e:
@@ -32,3 +29,5 @@ class OsOperation:
         unique_path = os.path.join(folder_path, unique_name)
 
         return unique_path
+
+# https://www.geeksforgeeks.org/python-loop-through-folders-and-files-in-directory/

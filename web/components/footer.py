@@ -8,14 +8,14 @@ _footer = html.Div([
         ]),
         dbc.Row([
 	        dbc.Col([], width = 1),
-            dbc.Col(['Created by DataScience Collective'], width = 3),
+            dbc.Col(['Created by Lasantha Lakmal'], width = 3),
             dbc.Col([], width =6),
 	        dbc.Col([
                 html.Ul([
                     html.Li([
-                        html.A([ html.I(className="fa-brands fa-github me-3 fa-1x")], href='https://github.com/DataScienceCollective'),
-                        html.A([ html.I(className="fa-brands fa-linkedin me-3 fa-1x")], href='https://www.linkedin.com/in/lasantha-lakmal/'),
-                        # html.A([ html.I(className="fa-brands fa-medium me-3 fa-1x")], href='')
+                        html.A([ html.I(className="fa-brands fa-github me-3 fa-1x")], href='#'),
+                        html.A([ html.I(className="fa-brands fa-linkedin me-3 fa-1x")], href='#'),
+                        html.A([ html.I(className="fa-brands fa-medium me-3 fa-1x")], href='')
                     ])
                 ], className='list-unstyled d-flex justify-content-center justify-content-md-start')
             ], width = 2)

@@ -101,7 +101,7 @@ class LSTMModel:
 
         print("Define X")
         texts = df['narrative'].values
-        tokenizer = Tokenizer(num_words=max_nb_words)
+        tokenizer = Tokenizer(num_words=max_nb_words, oov_token="<OOV>")
         tokenizer.fit_on_texts(texts)
         word_index = tokenizer.word_index
         print('Found %s unique tokens.' % len(word_index))
@@ -142,7 +142,14 @@ class LSTMModel:
         dfs[ds_name] = pd.concat(dfs_list, axis=0).reset_index(drop=True)
 
         return dfs
-    
+
+    def define_hyperparameters(self, options):
+        # Hyperparameters 
+        self.max_nb_words = 10000 # max number of words to use in the vocabulary
+        self.max_length = 100 # max length of each text (in terms of number of words)
+        self.embedding_dim = 100 # dimension of word embeddings
+        # lstm_units = 64 # number of units in the LSTM layer  
+         
     def pre_process(self, dfs):
         ds_name = self.ds_name
         sample_size = self.sample_size

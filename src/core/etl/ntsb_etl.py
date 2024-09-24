@@ -1,23 +1,23 @@
+# Outer Service Module
 import os
 import pandas as pd
 
+#Inner Service module
 from src.extensions.os_extension import OsOperation
-from src.extensions.pd_extension import PdExtension
 from src.extensions.shutil_extension import FileOperation
-
 from src.extensions.mdb_parser_extension import MdbParserExtension
-
 from .etl import ETL
 
-from src.config import settings
-from src.database import session_manager
 
 def combined_narrative(df):
     df['narrative_02'] = df['narrative_02'].fillna('')
 
     # Step 4: Combine 'narrative_01' and 'narrative_02' into a single 'narrative' column
     # code adapted from GeeksforGeeks (2021)
-    df['narrative'] = df['narrative_01'].str.cat(df['narrative_02'], sep=' ', na_rep='')
+    df['narrative'] = df['narrative_01'].str.cat(df['narrative_02'], sep=' ', na_rep=None)
+
+    df = df.dropna(subset=['narrative'])
+
     # end of adapted code
     return df
 
@@ -35,8 +35,6 @@ def clean_narrative(df):
 
     df = combined_narrative(df)
     df = counting_narrative(df)
-
-    df.dropna(subset=['narrative'], inplace=True)
 
     df = df[df['narrative_word_count'] > 0].copy()
     return df
@@ -121,6 +119,19 @@ class NtsbEtl(ETL):
                 print(e)
                 print(f'\n\n ############## ############## ############## \n\n' )
 
+    def cleaned_data(self, df):
+
+        # Return a new index with elements of the index that are not in the other.
+        columns_to_consider = df.columns.difference(['event_id'])
+
+        # Remove rows where all values are NaN
+        df_cleaned = df.dropna(how='all', subset=columns_to_consider)
+
+        # Remove col where all values are NaN
+        df_cleaned = df_cleaned.dropna(axis=1, how='all')
+
+        return df_cleaned
+    
     def build_main_mada(self, raw_data):
 
         table_name = self.ds_prefix
@@ -148,9 +159,15 @@ class NtsbEtl(ETL):
 
         data_df = pd.DataFrame(raw_data[f'{table_name}_events'])[['ev_id']].copy()
 
-        data_df = pd.merge(data_df,
-                        raw_data[f'{table_name}_narratives'][['ev_id', 'narr_accp', 'narr_accp_2']],
-                        on='ev_id', how='left')
+        raw_df = raw_data[f'{table_name}_narratives'][['ev_id', 'narr_accp', 'narr_accp_2']].copy()
+
+        print(raw_df.isnull().sum())
+
+        data_df = pd.merge(data_df, raw_df, on='ev_id', how='left')
+
+        print("==================")
+
+        print(data_df.isnull().sum())
         
         data_df.rename(columns={'ev_id': 'event_id', 'narr_accp': 'narrative_01', 'narr_accp_2': 'narrative_02'}, inplace=True)
 

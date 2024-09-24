@@ -5,7 +5,6 @@ from src.app import app
 from web.app import app as WebApp
 
 # code adapted from (Redditinc, n.d.)
-
 app.mount("/dashboard", WSGIMiddleware(WebApp.server))
 
 @app.get("/")

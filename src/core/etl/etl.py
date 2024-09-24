@@ -28,7 +28,7 @@ class ETL(ABC):
 
         self.ds_prefix = ds_prefix
         self.narrative_table_name = f"{ds_prefix}_narrative"
-        self.factors_table_name = f"{ds_prefix}_safety_factors"
+        self.factors_table_name = f"{ds_prefix}_factors"
 
         self.main_pd_extension = PdExtension(settings.main_db_name)
         self.ds_pd_extension = PdExtension(ds_raw_db)
@@ -37,6 +37,10 @@ class ETL(ABC):
     
     @abstractmethod
     async def extract_data(self, source_name, im_folder_path, ex_folder_path):
+        pass
+
+    @abstractmethod
+    def cleaned_data(self, df: pd.DataFrame):
         pass
 
     @abstractmethod
@@ -58,7 +62,6 @@ class ETL(ABC):
         
         all_data = {}
 
-        main_pd_Extension = self.main_pd_extension
         pd_Extension = self.ds_pd_extension
 
         os_operation = OsOperation()
@@ -73,16 +76,15 @@ class ETL(ABC):
 
             df = pd_Extension.read_db(f"`{table_name}`")
 
-            # Remove rows/cols where all values are NaN
+            # Remove Rows and Cols where all values are NaN
             df_cleaned = self.cleaned_data(df)
 
-            print(table_name, ' => df=', df.shape, ' vs ', 'df_cleaned=', df.shape)
+            print(table_name, ' => df=', df.shape, ' vs ', 'df_cleaned=', df_cleaned.shape)
 
             if not df_cleaned.empty:
                 table_name = table_name.lower().replace(' ', '_')
                 new_table_name = f"{self.ds_prefix}_{table_name}"
                 all_data[new_table_name] = df_cleaned
-                # main_pd_Extension.save_to_db(df_cleaned, f"{ds_name.lower()}_{new_table_name}", 'replace')
 
         self.build_data(all_data)
 
@@ -112,21 +114,9 @@ class ETL(ABC):
         combined_df = pd.merge(combined_df, factors_df, on='event_id', how='left')
         print("combined_df=", combined_df.shape)
 
+        combined_df = combined_df.dropna(subset=['narrative_01', 'narrative_02'], how='all')
+        combined_df = combined_df.dropna(subset=['finding_description'])
         self.save_data(combined_df, self.ds_prefix)
-
-
-    def cleaned_data(self, df):
-
-        # Return a new Index with elements of index not in other.
-        columns_to_consider = df.columns.difference(['ACN'])
-
-        # Remove rows where all values are NaN
-        df_cleaned = df.dropna(how='all', subset=columns_to_consider)
-
-        # Remove col where all values are NaN
-        df_cleaned = df_cleaned.dropna(axis=1, how='all')
-
-        return df_cleaned
 
     # Save data to both database and CSV
     def save_data(self, df, table_name):

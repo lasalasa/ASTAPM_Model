@@ -14,8 +14,8 @@ _nav = dbc.Container([
 	dbc.Row([
         dbc.Nav(
 	        [
-                dbc.NavLink("Dashboard", active='exact', href="dashboard"),
-                dbc.NavLink("Simulator", active='exact', href="simulator")
+                dbc.NavLink("Dashboard", active='exact', href="/dashboard"),
+                dbc.NavLink("Simulator", active='exact', href="/dashboard/simulator")
                 # dbc.NavLink(page["name"], active='exact', href=page["path"]) for page in dash.page_registry.values()
             ],
 	        vertical=True, pills=True, class_name='my-nav')

@@ -7,7 +7,7 @@ import plotly.express as px
 
 from dash import Dash, dcc, html, Input, Output
 
-dash.register_page(__name__, name='Dashboard', title='AST-APM | Dashboard')
+dash.register_page(__name__, path='/', name='Dashboard', title='AST-APM | Dashboard')
 
 fig = go.Figure()
 
