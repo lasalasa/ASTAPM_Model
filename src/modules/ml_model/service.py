@@ -68,11 +68,14 @@ async def do_train(
                 input_to_date = '2023-06-31 23:59:59'
                 max_length = 150
                 max_nb_words = 10000
+                is_enable_smote = False
             elif ds_name_item.lower() == "ntsb":
                 input_from_date = '2020-01-01 00:00:00'
                 input_to_date = '2023-01-31 23:59:59'
                 max_length = 200
-                max_nb_words = 50000
+                max_nb_words = 10000,
+                is_enable_smote = False
+            
 
             query = text(f"""
                 SELECT * FROM {ds_name_item}
@@ -106,11 +109,12 @@ async def do_train(
             # input_from_date = '2023-01-01 00:00:00'
             # input_to_date = '2023-12-31 23:59:59'
             max_length = 200
-            max_nb_words = 7500
+            max_nb_words = 7500,
+            is_enable_smote = False
 
         if input_model_name == "LSTM_Predictor":
             print(max_length, max_nb_words)
-            model_LSTM = LSTMModel(dfs, ds_name=input_data_source, ls_version=input_model_ls_version, sample_size=0, max_length=max_length, max_nb_words=max_nb_words)
+            model_LSTM = LSTMModel(dfs, ds_name=input_data_source, ls_version=input_model_ls_version, sample_size=0, max_length=max_length, max_nb_words=max_nb_words, is_enable_smote=is_enable_smote)
             model_LSTM.train()
             evaluation_report = model_LSTM.evaluate()
         

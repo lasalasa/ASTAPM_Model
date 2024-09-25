@@ -53,12 +53,11 @@ class PdExtension:
             engine = PdExtension.get_engine(self.db_name)
 
             df.to_sql(name=table_name, con=engine, if_exists=if_exists, index=False)
-            # if engine.has_table(table_name):
-            #     # Table exists, append data
-            #     df.to_sql(table_name, con=engine, if_exists='append', index=False)
-            # else:
-            #     # Table does not exist, create table
-            #     df.to_sql(table_name, con=engine, if_exists='replace', index=False)
+
+            # Alter the table to set the 'ID' column as the primary key
+            with engine.connect() as connection:
+                connection.execute("ALTER TABLE people ADD PRIMARY KEY (ID);")
+
         except Exception as e:
             print(e)
             print("Error occurred when saving to db: ", sys.exc_info()[0])

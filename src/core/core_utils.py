@@ -9,7 +9,7 @@ narrative_columns = ['narrative_01', 'narrative_02']
 
 filtered_columns = ['event_id'] + factors_columns + narrative_columns
 
-PATH_PREFIX = '../../data/local_ex/astapm'
+PATH_PREFIX = '../data/local_ex/astapm'
 
 class CoreUtils:
     #----------- Data Manipulation Func ----------
@@ -36,7 +36,7 @@ class CoreUtils:
     def get_data(ds_name, from_year=2020, to_year=2023):
 
         path_prefix = PATH_PREFIX
-
+        print(path_prefix)
         data_df = pd.read_csv(f'{path_prefix}/{ds_name}/{ds_name}.csv', low_memory=False)
         # asrs_narrative = pd.read_csv(f'{path_prefix}/{ds_name}/{ds_name}_narrative.csv', low_memory=False)
         # asrs_factors = pd.read_csv(f'{path_prefix}/{ds_name}/{ds_name}_safety_factors.csv', low_memory=False)

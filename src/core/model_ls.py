@@ -9,9 +9,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from .core_utils import CoreUtils
-from .text_processor import TextPreprocessor
-from .auto_labeling import AutoLabeling
+from src.core.core_utils import CoreUtils
+from src.core.text_processor import TextPreprocessor
+from src.core.labeling_auto import AutoLabeling
 from src.extensions.os_extension import OsOperation
 
 #----------- Model Save/Load Func ----------
@@ -86,6 +86,9 @@ class ModelLS:
         self.sample_size = sample_size
         self.options = options
 
+        category_value = 'HFACS_Category_balance_Value'
+        self.category_value = category_value
+
         factor_col_name = CoreUtils.get_constant()["FACTOR_COL_NAME"]
         self.factor_col_name = factor_col_name
 
@@ -97,9 +100,9 @@ class ModelLS:
 
         df_labeled = self.do_label()
 
-        df_labeled = df_labeled.dropna(subset=['HFACS_Category_Value', factor_col_name])
+        df_labeled = df_labeled.dropna(subset=[category_value, factor_col_name])
 
-        labels = df_labeled["HFACS_Category_Value"].values
+        labels = df_labeled[category_value].values
         label_encoder = LabelEncoder()
         Y = label_encoder.fit_transform(labels)
 
@@ -123,7 +126,6 @@ class ModelLS:
 
     def do_label(self):
         sample_size = self.sample_size
-        options = self.options
 
         ds_name = self.ds_name
         dfs = self.dfs.copy()
@@ -135,7 +137,7 @@ class ModelLS:
             ds_name_item_01 = ds_name_list[0]
             df = dfs[ds_name_item_01]
             
-            autoLabeling_01 = AutoLabeling(df, ds_name_item_01, options)
+            autoLabeling_01 = AutoLabeling(df)
             df_labeled = autoLabeling_01.do_auto_label(sample_size)
             labeled_dfs.append(df_labeled)
 
@@ -143,14 +145,14 @@ class ModelLS:
 
             for ds_name_item in ds_name_list:
                 df_next = dfs[ds_name_item]
-                autoLabeling = AutoLabeling(df_next, ds_name_item, options)
+                autoLabeling = AutoLabeling(df_next)
                 df_labeled_next = autoLabeling.do_auto_label(sample_size)
                 labeled_dfs.append(df_labeled_next)
             
             return pd.concat(labeled_dfs, axis=0).reset_index(drop=True)
 
         df = dfs[ds_name]
-        autoLabeling = AutoLabeling(df, ds_name, options)
+        autoLabeling = AutoLabeling(df)
         df_labeled = autoLabeling.do_auto_label(sample_size)
         return df_labeled
 

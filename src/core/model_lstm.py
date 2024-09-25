@@ -16,6 +16,7 @@ from tensorflow.keras.regularizers import l2
 # from keras.optimizers import Adam
 # from keras.callbacks import EarlyStopping
 from tensorflow.keras.models import load_model
+from imblearn.over_sampling import SMOTE
 
 import numpy as np
 import pandas as pd
@@ -23,9 +24,9 @@ from collections import Counter
 
 import joblib
 
-from .core_utils import CoreUtils
-from .text_processor import TextPreprocessor
-from .model_ls import ModelLS
+from src.core.core_utils import CoreUtils
+from src.core.text_processor import TextPreprocessor
+from src.core.model_ls import ModelLS
 
 # This should be the same as the 'num_words' in the tokenizer
 MAX_NB_WORDS = 7500
@@ -67,13 +68,14 @@ def pre_process_df(df, col_name):
     return df
 
 class LSTMModel:
-    def __init__(self, dfs=None, ds_name='asrs', ls_version=1, sample_size=1000, max_length=300, max_nb_words=5000):
+    def __init__(self, dfs=None, ds_name='asrs', ls_version=1, sample_size=1000, max_length=300, max_nb_words=5000, is_enable_smote=False):
 
         self.ds_name = ds_name
         self.sample_size = sample_size
         self.ls_version = ls_version
         self.max_length = max_length
         self.max_nb_words = max_nb_words
+        self.is_enable_smote = is_enable_smote
 
         factor_col_name = CoreUtils.get_constant()["FACTOR_COL_NAME"]
         self.factor_col_name = factor_col_name
@@ -83,7 +85,7 @@ class LSTMModel:
             dfs = self.get_data()        
             print("Data loaded")
         
-        print(dfs[ds_name])
+        # print(dfs[ds_name])
 
         dfs = self.pre_process(dfs)
         self.dfs = dfs
@@ -112,13 +114,10 @@ class LSTMModel:
         print('Shape of data tensor:', X.shape)
         
         model = Sequential()
-        model.add(Embedding(MAX_NB_WORDS, EMBEDDING_DIM))
+        model.add(Embedding(max_nb_words, EMBEDDING_DIM))
         model.add(SpatialDropout1D(0.25))
-        # model.add(LSTM(units=64, dropout=0.3, recurrent_dropout=0.3))
         model.add(LSTM(units=64, return_sequences=True, dropout=0.25, recurrent_dropout=0.25))
         model.add(LSTM(units=64, dropout=0.25, recurrent_dropout=0.25))
-        # model.add(LSTM(units=64, dropout=0.2, recurrent_dropout=0.2))  # Add a second LSTM layer
-        
         model.add(Dense(len(lstm_label_encoder.classes_), activation='softmax', kernel_regularizer=l2(0.001)))
 
         model.compile(loss='sparse_categorical_crossentropy', optimizer=Adam(learning_rate=0.0001),  metrics=['accuracy'])
@@ -129,7 +128,7 @@ class LSTMModel:
         ds_name = self.ds_name
         ds_name_list = ds_name.split('_')
 
-        print(ds_name_list)
+        # print(ds_name_list)
         self.sample_size = self.sample_size * len(ds_name_list)
 
         dfs = {}
@@ -148,8 +147,17 @@ class LSTMModel:
         self.max_nb_words = 10000 # max number of words to use in the vocabulary
         self.max_length = 100 # max length of each text (in terms of number of words)
         self.embedding_dim = 100 # dimension of word embeddings
-        # lstm_units = 64 # number of units in the LSTM layer  
-         
+        self.lstm_units = 64 # number of units in the LSTM layer 
+        self.num_of_class = len(self.lstm_label_encoder.classes_)
+    
+    def define_model(self):
+        model = Sequential()
+        model.add(Embedding(self.max_nb_words, self.embedding_dim))
+        model.add(SpatialDropout1D(0.25))
+        model.add(LSTM(units=self.lstm_units, return_sequences=True, dropout=0.25, recurrent_dropout=0.25))
+        model.add(LSTM(units=64, dropout=0.25, recurrent_dropout=0.25))
+        model.add(Dense(len(self.num_of_class), activation='softmax', kernel_regularizer=l2(0.001)))
+
     def pre_process(self, dfs):
         ds_name = self.ds_name
         sample_size = self.sample_size
@@ -176,10 +184,27 @@ class LSTMModel:
 
         X = self.X
         Y = self.Y
+        is_enable_smote = self.is_enable_smote
 
         X_train, X_test, Y_train, Y_test = train_test_split(X,Y, test_size = 0.10, random_state = 42)
+        
         print(X_train.shape,Y_train.shape)
         print(X_test.shape,Y_test.shape)
+        
+        if is_enable_smote:
+
+            print(pd.Series(Y_train).value_counts())
+
+            smote = SMOTE(random_state=42)
+            X_resampled, Y_resampled = smote.fit_resample(X_train, Y_train)
+
+            print(f"Original dataset shape: {X_train.shape}")
+            print(f"Resampled dataset shape: {X_resampled.shape}")
+
+        else: 
+            X_resampled = X_train
+            Y_resampled = Y_train
+
 
         # Early stopping to prevent overfitting
         early_stopping = EarlyStopping(monitor='val_loss', 
@@ -187,7 +212,7 @@ class LSTMModel:
             min_delta=0.001)
         
         # Train the model
-        history = self.model.fit(X_train, Y_train, 
+        history = self.model.fit(X_resampled, Y_resampled, 
             epochs=epochs,
             batch_size=batch_size,
             validation_split=0.1, 
