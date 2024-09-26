@@ -17,13 +17,15 @@ def show_disctribution(df):
     # Create a figure with 1 row and 2 columns of subplots
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
+    sorted_values = sorted(df['HFACS_Category_Value'].unique())
     # Plot the first countplot on the first axes
-    sns.countplot(x='HFACS_Category_Value', data=df, ax=axes[0])
+    sns.countplot(x='HFACS_Category_Value', data=df, ax=axes[0], order=sorted_values)
     axes[0].set_title('The distribution of Taxonomy (With Original HFACS)')
     axes[0].tick_params(axis='x', rotation=90)  # Rotate x-axis labels if needed
 
+    sorted_balance_values = sorted(df['HFACS_Category_balance_Value'].unique())
     # Plot the second countplot on the second axes
-    sns.countplot(x='HFACS_Category_balance_Value', data=df, ax=axes[1])
+    sns.countplot(x='HFACS_Category_balance_Value', data=df, ax=axes[1], order=sorted_balance_values)
     axes[1].set_title('The distribution of Taxonomy (With Proposed HFACS)')
     axes[1].tick_params(axis='x', rotation=90)  # Rotate x-axis labels if needed
 
@@ -35,9 +37,11 @@ class AutoLabeling:
 
     def __init__(self, df):
 
-        factor_col_name = CoreUtils.get_constant()["FACTOR_COL_NAME"]
+        manual_cla_factor_name = CoreUtils.get_constant()["MANUAL_CLASSIFICATION_FACTOR"]
+        ls_cla_factor_name = CoreUtils.get_constant()["LS_CLASSIFICATION_FACTOR"]
         
-        self.factor_col_name = factor_col_name
+        self.manual_cla_factor_name = manual_cla_factor_name
+        self.ls_cla_factor_name = ls_cla_factor_name
        
         self.df = df
     
@@ -51,6 +55,8 @@ class AutoLabeling:
                 for keyword in keywords:
 
                     # First check for an exact match
+                    # print(doc_text, keyword)
+
                     if keyword.lower() == doc_text.lower():
                         return HFACS_DICTIONARY[subcategory]
                     
@@ -63,7 +69,7 @@ class AutoLabeling:
 
     def do_auto_label(self, sample_size=0):
 
-        factor_col_name = self.factor_col_name
+        manual_cla_factor_name = self.manual_cla_factor_name
         df = self.df
         df_size = df.shape[0]
 
@@ -78,11 +84,13 @@ class AutoLabeling:
 
         data = df_tail.copy()
 
-        data['HFACS_Category'] = data[factor_col_name].apply(lambda x: self.classify_document(x, False))
+        print(manual_cla_factor_name)
+
+        data['HFACS_Category'] = data[manual_cla_factor_name].apply(lambda x: self.classify_document(x, False))
         data['HFACS_Category_Level'] = data['HFACS_Category'].apply(lambda x: x[0])
         data['HFACS_Category_Value'] = data['HFACS_Category'].apply(lambda x: f"{x[0]}-{x[3]}".rstrip('-'))
 
-        data['HFACS_Category_balance'] = data[factor_col_name].apply(lambda x: self.classify_document(x, True))
+        data['HFACS_Category_balance'] = data[manual_cla_factor_name].apply(lambda x: self.classify_document(x, True))
         data['HFACS_Category_balance_Level'] = data['HFACS_Category_balance'].apply(lambda x: x[0])
         data['HFACS_Category_balance_Value'] = data['HFACS_Category_balance'].apply(lambda x: f"{x[0]}-{x[3]}".rstrip('-'))
 

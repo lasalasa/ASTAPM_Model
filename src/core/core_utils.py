@@ -1,15 +1,16 @@
 import pandas as pd
 
 # Variables
-FACTOR_COL_NAME = "finding_description"
+MANUAL_CLASSIFICATION_FACTOR = "finding_factor"
+LS_CLASSIFICATION_FACTOR = "finding_description"
 
-factors_columns = [ FACTOR_COL_NAME ]
+factors_columns = [ MANUAL_CLASSIFICATION_FACTOR, LS_CLASSIFICATION_FACTOR ]
 
 narrative_columns = ['narrative_01', 'narrative_02']
 
-filtered_columns = ['event_id'] + factors_columns + narrative_columns
+filtered_columns = ['event_id', 'date'] + factors_columns + narrative_columns
 
-PATH_PREFIX = '../data/local_ex/astapm'
+PATH_PREFIX = '../../data/local_ex/astapm'
 
 class CoreUtils:
     #----------- Data Manipulation Func ----------
@@ -17,7 +18,8 @@ class CoreUtils:
     @staticmethod
     def get_constant():
         return {
-            "FACTOR_COL_NAME": FACTOR_COL_NAME,
+            "LS_CLASSIFICATION_FACTOR": LS_CLASSIFICATION_FACTOR,
+            "MANUAL_CLASSIFICATION_FACTOR": MANUAL_CLASSIFICATION_FACTOR
         }
     
     @staticmethod
@@ -33,10 +35,10 @@ class CoreUtils:
         return filtered_columns
 
     @staticmethod
-    def get_data(ds_name, from_year=2020, to_year=2023):
+    def get_data(ds_name, from_year=2022, to_year=2024):
 
         path_prefix = PATH_PREFIX
-        print(path_prefix)
+
         data_df = pd.read_csv(f'{path_prefix}/{ds_name}/{ds_name}.csv', low_memory=False)
         # asrs_narrative = pd.read_csv(f'{path_prefix}/{ds_name}/{ds_name}_narrative.csv', low_memory=False)
         # asrs_factors = pd.read_csv(f'{path_prefix}/{ds_name}/{ds_name}_safety_factors.csv', low_memory=False)

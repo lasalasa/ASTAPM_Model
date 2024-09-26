@@ -5,7 +5,7 @@ HFACS_DICTIONARY = {
         # Unmapped
     -1: ('Unmapped', 'Unmapped', 'Unmapped', ''),
     # Unsafe Acts
-    110: ('Level 1', 'Unsafe acts', 'Errors/Violations', 'Errors/Violations'), # 'Decision/Skill-based/Perceptual Errors/Violations'
+    110: ('Level 1', 'Unsafe acts', 'Errors/Violations', 'Unsafe acts Errors/Violations'), # 'Decision/Skill-based/Perceptual Errors/Violations'
     # Unsafe Acts / Errors
     111: ('Level 1', 'Unsafe acts', 'Errors', 'Skill-based Errors'),
     112: ('Level 1', 'Unsafe acts', 'Errors', 'Decision Errors'),
@@ -96,11 +96,11 @@ hfacs_mapping = {
             'Incorrect / Not Installed / Unavailable Part', 
             
             # ASRS and NTSB
-            'Aircraft',
+            # 'Aircraft',
             
             # NTSB
             'Environmental issues-Operating environment',
-            # 'Aircraft-Aircraft systems'
+            'Aircraft-Aircraft systems'
         ],
         # 'Conditions of Operators/Adverse Mental States
         221: [
@@ -207,18 +207,28 @@ hfacs_mapping = {
 hfacs_mapping_balance = {
     # Level 01
     'Unsafe Acts': {
+        # Unsafe Acts-Decision/Perceptual/Violations
         110: [
             # ASRS
-            'Distraction', 
-            'Troubleshooting', 
+            # 'Distraction', 
+            # 'Troubleshooting', 
             'confusion', 
             'Ambiguous',
 
             # NTSB
-            'Personnel issues-Task performance', 
+            # 'Personnel issues-Task performance', 
             'Personnel issues-Action/decision', 
             'Personnel issues-Psychological-Perception/orientation/illusion',
             'Personnel issues-Miscellaneous-Intentional act'
+        ],
+        # Errors/Skill-based
+        111: [
+            # ASRS
+            'Distraction', 
+            'Troubleshooting',
+
+            # NTSB
+            'Personnel issues-Task performance'
         ],
     },
     # Level 02
@@ -232,7 +242,8 @@ hfacs_mapping_balance = {
             # NTSB
             'Environmental issues-Physical environment',
             'Environmental issues-Conditions/weather/phenomena-Turbulence',
-            'Environmental issues-Task environment'
+            'Environmental issues-Task environment',
+            'Environmental issues-Operating environment'
         ],
         # Technological Environment
         212: [
@@ -241,11 +252,11 @@ hfacs_mapping_balance = {
             'Incorrect / Not Installed / Unavailable Part', 
             
             # ASRS and NTSB
-            'Aircraft',
+            # 'Aircraft-Aircraft',
             
             # NTSB
             'Environmental issues-Operating environment',
-            # 'Aircraft-Aircraft systems'
+            'Aircraft-Aircraft systems'
         ],
         # Conditions of Operators
         220: [

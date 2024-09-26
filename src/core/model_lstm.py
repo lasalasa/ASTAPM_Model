@@ -1,3 +1,10 @@
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+from collections import Counter
+import pandas as pd
+
 from sklearn.preprocessing import LabelEncoder
 
 # Text pre-processing
@@ -17,10 +24,7 @@ from tensorflow.keras.regularizers import l2
 # from keras.callbacks import EarlyStopping
 from tensorflow.keras.models import load_model
 from imblearn.over_sampling import SMOTE
-
-import numpy as np
-import pandas as pd
-from collections import Counter
+from imblearn.over_sampling import ADASYN
 
 import joblib
 
@@ -34,6 +38,86 @@ MAX_NB_WORDS = 7500
 EMBEDDING_DIM = 100
 
 MAX_LENGTH = 300
+
+def show_label_distribution(data):
+    plt.figure(figsize=(8,6))
+    sns.countplot(data['HFACS_Category_Value_Predict'])
+    plt.title('The distribution of Primary problem')
+
+def word_count_distribution(df):
+    # Assuming you have a list of all words in your dataset
+    all_words = [word for text in df['narrative'].values for word in text.split()]
+    word_counts = Counter(all_words)
+
+    # Plot top 50 most frequent words
+    common_words = word_counts.most_common(50)
+    labels, values = zip(*common_words)
+    plt.bar(labels, values)
+    plt.xticks(rotation=90)
+    plt.show()
+
+    # Print the number of unique words in your dataset
+    print(f"Total unique words: {len(word_counts)}")
+
+def show_narrative_distribution(data):
+    plt.figure(figsize=(14, 6))
+
+    word_count = data['narrative_word_count']
+
+    sns.histplot(word_count,  bins=50, color='blue', kde=True)
+    plt.xlabel('Number of Words')
+    plt.ylabel('Number of sample')
+    plt.title('Distribution of Word Counts (KDE)')
+
+    # Overlay mean (mu) and standard deviation (sigma) on the plot
+    mean = word_count.mean()
+    std = word_count.std()
+    # Display mean and standard deviation on the plot
+    plt.text(0.7, 0.9, r'$\mu={:.2f}$'.format(mean), transform=plt.gca().transAxes, fontsize=12)
+    plt.text(0.7, 0.85, r'$\sigma={:.2f}$'.format(std), transform=plt.gca().transAxes, fontsize=12)
+
+    # Display the plots
+    plt.tight_layout()
+    plt.show()
+
+# https://towardsdatascience.com/multi-class-text-classification-with-lstm-1590bee1bd17
+
+def model_summary(history):
+
+    # Create subplots: 1 row, 2 columns
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+    # Plot the loss on the first axes
+    axes[0].plot(history.history['loss'], label='train')
+    axes[0].plot(history.history['val_loss'], label='test')
+    axes[0].set_title('Loss')
+    axes[0].set_xlabel('Epochs')
+    axes[0].set_ylabel('Loss')
+    axes[0].legend()
+
+    # Plot the accuracy on the second axes
+    axes[1].plot(history.history['accuracy'], label='train')
+    axes[1].plot(history.history['val_accuracy'], label='test')
+    axes[1].set_title('Accuracy')
+    axes[1].set_xlabel('Epochs')
+    axes[1].set_ylabel('Accuracy')
+    axes[1].legend()
+
+    # Adjust layout to prevent overlap
+    plt.tight_layout()
+    plt.show()
+    
+
+#  Confusion Matrix
+def show_lstm_confusion_matrix(conf_matrix, classes):
+    # Plot the confusion matrix
+    plt.figure(figsize=(10,8))
+    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=classes, yticklabels=classes)
+    plt.xlabel('Predicted Label')
+    plt.ylabel('True Label')
+    plt.title('Confusion Matrix')
+    plt.show()
+
 
 def pre_process_df(df, col_name):
 
@@ -77,7 +161,7 @@ class LSTMModel:
         self.max_nb_words = max_nb_words
         self.is_enable_smote = is_enable_smote
 
-        factor_col_name = CoreUtils.get_constant()["FACTOR_COL_NAME"]
+        factor_col_name = CoreUtils.get_constant()["LS_CLASSIFICATION_FACTOR"]
         self.factor_col_name = factor_col_name
 
         if dfs is None:
@@ -92,6 +176,10 @@ class LSTMModel:
         print("Pre processed")
 
         df = dfs[ds_name]
+
+        show_label_distribution(df)
+        show_narrative_distribution(df)
+        word_count_distribution(df)
 
         print("Define Y")
         lstm_labels = df['HFACS_Category_Value_Predict'].values
@@ -176,7 +264,7 @@ class LSTMModel:
 
         dfs[ds_name] = df
 
-        print(df.head())
+        # print(df.head())
         return dfs
 
 
@@ -186,14 +274,15 @@ class LSTMModel:
         Y = self.Y
         is_enable_smote = self.is_enable_smote
 
-        X_train, X_test, Y_train, Y_test = train_test_split(X,Y, test_size = 0.10, random_state = 42)
+        X_train, X_test, Y_train, Y_test = train_test_split(X,Y, test_size = 0.3, random_state = 42)
         
         print(X_train.shape,Y_train.shape)
         print(X_test.shape,Y_test.shape)
+
+        # print(pd.Series(Y_train).value_counts())
+        print(pd.Series(Y_test).value_counts())
         
         if is_enable_smote:
-
-            print(pd.Series(Y_train).value_counts())
 
             smote = SMOTE(random_state=42)
             X_resampled, Y_resampled = smote.fit_resample(X_train, Y_train)
@@ -242,6 +331,7 @@ class LSTMModel:
 
         # Convert probabilities to class indices
         y_pred_classes = np.argmax(y_pred, axis=1)
+        self.Y_pred = y_pred_classes
 
         conf_matrix = confusion_matrix(Y_test, y_pred_classes, labels=map_labels)
 
@@ -252,9 +342,9 @@ class LSTMModel:
         report = classification_report(Y_test, y_pred_classes, labels=map_labels, output_dict=True)
 
         # Classification report for precision, recall, F1-score
-        print(classification_report(Y_test, y_pred_classes, labels=map_labels))
+        # print(classification_report(Y_test, y_pred_classes, labels=map_labels))
 
-        print(conf_matrix)
+        # print(conf_matrix)
 
         history = self.history
 
@@ -264,7 +354,7 @@ class LSTMModel:
         train_accuracy = history.history['accuracy']
         test_accuracy = history.history['val_accuracy']
 
-        print(train_loss, test_loss)
+        # print(train_loss, test_loss)
 
         df = self.dfs[ds_name]
 
@@ -289,9 +379,12 @@ class LSTMModel:
 
         df['lstm_predict_label'] = predict_text_label
 
-        print(df['date'])
+        # print(df['date'])
         
         new_df = df.groupby('date')['lstm_predict_label'].value_counts().unstack().fillna(0)
+
+        model_summary(history)
+        show_lstm_confusion_matrix(conf_matrix, labels)
 
         evaluation_result = {
             "accuracy": accuracy,

@@ -54,10 +54,6 @@ class PdExtension:
 
             df.to_sql(name=table_name, con=engine, if_exists=if_exists, index=False)
 
-            # Alter the table to set the 'ID' column as the primary key
-            with engine.connect() as connection:
-                connection.execute("ALTER TABLE people ADD PRIMARY KEY (ID);")
-
         except Exception as e:
             print(e)
             print("Error occurred when saving to db: ", sys.exc_info()[0])

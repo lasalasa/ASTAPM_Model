@@ -44,6 +44,18 @@ def clean_feature(df: pd.DataFrame, feature_name):
 
     return df
 
+def define_finding_factor(row):
+    factor = ''
+    finding_description:str = row['finding_description']
+    finding_description_list = [factor.strip() for factor in finding_description.split('-')]
+
+    if finding_description_list[0] == 'Not determined':
+        return 'Not determined'
+    
+    factor = f"{finding_description_list[0]}-{finding_description_list[1]}-{finding_description_list[2]}".rstrip('-')
+
+    return factor
+
 class NtsbEtl(ETL):
 
     def __init__(self, data_source):
@@ -195,6 +207,9 @@ class NtsbEtl(ETL):
         data_df.rename(columns={'ev_id': 'event_id'}, inplace=True)
 
         data_df = clean_feature(data_df, 'finding_description')
+
+        data_df['finding_factor'] = data_df.apply(define_finding_factor,  axis=1)
+        data_df = data_df[data_df['finding_factor'] != 'Not determined']
 
         return data_df
 

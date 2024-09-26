@@ -78,38 +78,96 @@ def clean_event_factores(df):
     df['contributing_factors'] = df['contributing_factors'].fillna(df['primary_problem'])
     return df
 
-def combine_event_factors(row):
+# def combine_event_factors(row):
+#     # # https://sparkbyexamples.com/pandas/pandas-concatenate-two-columns/
+#     # # Concatenate the selected columns with a separator (e.g., a space or comma)
+#     primary_problem = row['primary_problem']
+
+#     # Check for 'Weather'
+#     if primary_problem == 'Weather':
+#         return primary_problem
+    
+#     # Check for 'Human Factors'
+#     if primary_problem == 'Human Factors':
+#         human_factors = row['human_factors'] if pd.notnull(row['human_factors']) else ''
+#         anomaly = row['event_anomaly'] if pd.notnull(row['event_anomaly']) else ''
+        
+#         if human_factors and not human_factors == primary_problem:
+#             return human_factors
+#         elif human_factors and anomaly:
+#             return f"{human_factors}:{anomaly}".rstrip(':')
+#         return primary_problem
+
+#     # For other primary problems
+#     else:
+#         human_factors = row['human_factors'] if pd.notnull(row['human_factors']) else ''
+#         aircraft_component = row['aircraft_component'] if pd.notnull(row['aircraft_component']) else ''
+#         problem = row['aircraft_component_problem'] if pd.notnull(row['aircraft_component_problem']) else ''
+#         anomaly = row['event_anomaly'] if pd.notnull(row['event_anomaly']) else ''
+
+#         contributing_factors = row['contributing_factors'] if pd.notnull(row['contributing_factors']) else ''
+        
+#         if human_factors and aircraft_component and problem and anomaly:
+#             # print(f'----={primary_problem}>{human_factors}')
+#             return f"{human_factors}:{aircraft_component}:{problem}:{anomaly}".rstrip(':')
+        
+#         if contributing_factors == 'Aircraft' and primary_problem == 'Aircraft':
+#             return 'Aircraft-Aircraft'
+
+#         contributing_factors = contributing_factors.replace("Aircraft", "")
+#         if contributing_factors and aircraft_component and problem and anomaly:
+#             return f"{primary_problem}:{aircraft_component}:{problem}:{anomaly}".rstrip(':')
+#         return primary_problem
+
+def define_finding_description(row):
     # # https://sparkbyexamples.com/pandas/pandas-concatenate-two-columns/
     # # Concatenate the selected columns with a separator (e.g., a space or comma)
     primary_problem = row['primary_problem']
 
-    # Check for 'Weather'
-    if primary_problem == 'Weather':
-        return primary_problem
+    primary_problem:str = row['primary_problem'] if pd.notnull(row['primary_problem']) else ''
+    contributing_factors:str = row['contributing_factors'] if pd.notnull(row['contributing_factors']) else ''
+    human_factors:str = row['human_factors'] if pd.notnull(row['human_factors']) else ''
+
+    return f"{primary_problem}-{contributing_factors}-{human_factors}".rstrip('-')
+
+def get_human_factor(row, factor):
+    human_factors:str = row['human_factors']
     
-    # Check for 'Human Factors'
-    if primary_problem == 'Human Factors':
-        human_factors = row['human_factors'] if pd.notnull(row['human_factors']) else ''
-        anomaly = row['event_anomaly'] if pd.notnull(row['event_anomaly']) else ''
-        
-        if human_factors and anomaly:
-            return f"{primary_problem}:{human_factors}:{anomaly}".rstrip(':')
-        return primary_problem
+    if pd.isnull(human_factors):
+        return factor
+    
+    human_factors_list = [factor.strip() for factor in human_factors.split(';')]
+    return human_factors_list[0]
 
-    # For other primary problems
+def define_finding_factor(row):
+    factor = ''
+    contributing_factors:str = row['contributing_factors']
+    contributing_factors_list = [factor.strip() for factor in contributing_factors.split(';')]
+
+    if len(contributing_factors_list) == 1:
+        factor = contributing_factors_list[0]
+
+        # if factor == 'Human Factors' or factor == 'Aircraft':
+        factor = get_human_factor(row, factor)
+
+        if factor == 'Aircraft':
+            return 'Aircraft-Aircraft systems'
+
     else:
-        human_factors = row['human_factors'] if pd.notnull(row['human_factors']) else ''
-        aircraft_component = row['aircraft_component'] if pd.notnull(row['aircraft_component']) else ''
-        problem = row['aircraft_component_problem'] if pd.notnull(row['aircraft_component_problem']) else ''
-        anomaly = row['event_anomaly'] if pd.notnull(row['event_anomaly']) else ''
-        
-        if human_factors and aircraft_component and problem and anomaly:
-            print(f'----={primary_problem}>{human_factors}')
-            return f"{human_factors}:{aircraft_component}:{problem}:{anomaly}".rstrip(':')
+        contributing_factors_list = [factor for factor in contributing_factors_list if factor != 'Aircraft']
 
-        if aircraft_component and problem and anomaly:
-            return f"{primary_problem}:{aircraft_component}:{problem}:{anomaly}".rstrip(':')
-        return primary_problem
+        if len(contributing_factors_list) == 1:
+            factor = contributing_factors_list[0]
+
+            # if factor == 'Human Factors':
+            factor = get_human_factor(row, factor)
+        elif 'Human Factors' in contributing_factors_list:
+            factor = contributing_factors_list[0]
+            factor = get_human_factor(row, factor)
+        else:
+            factor = contributing_factors_list[0]
+
+    return factor
 
 class AsrsEtl(ETL):
 
@@ -298,7 +356,10 @@ class AsrsEtl(ETL):
 
         data_df = clean_event_factores(data_df)
 
-        data_df['finding_description'] = data_df.apply(combine_event_factors, axis=1)
+        # data_df['finding_description'] = data_df.apply(combine_event_factors, axis=1)
+
+        data_df['finding_factor'] = data_df.apply(define_finding_factor ,  axis=1)
+        data_df['finding_description'] = data_df.apply(define_finding_description ,  axis=1)
 
         data_df = clean_feature(data_df, 'finding_description')
 

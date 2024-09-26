@@ -11,14 +11,14 @@ import seaborn as sns
 
 from src.core.core_utils import CoreUtils
 from src.core.text_processor import TextPreprocessor
-from src.core.labeling_auto import AutoLabeling
+from src.core.labeling_auto import AutoLabeling, show_disctribution
 from src.extensions.os_extension import OsOperation
 
 #----------- Model Save/Load Func ----------
 def save_model_LS(model, vectorizer, label_encoder, unmapped_encoder, name):
     # Save both the model and vectorizer to a file
 
-    PATH_PREFIX = f'data/model_store/{name}'
+    PATH_PREFIX = f'../data/model_store/{name}'
 
     osOperation = OsOperation()
     file_list = osOperation.get_dir_files(PATH_PREFIX)
@@ -35,7 +35,7 @@ def save_model_LS(model, vectorizer, label_encoder, unmapped_encoder, name):
 def load_model_LS(name, version=0):
     # Load both the model and vectorizer from the file
 
-    PATH_PREFIX = f'data/model_store/{name}'
+    PATH_PREFIX = f'../data/model_store/{name}'
 
     if version == 0:
         dump_name = f'{PATH_PREFIX}/model_LS_{name}_1.pkl'
@@ -86,10 +86,14 @@ class ModelLS:
         self.sample_size = sample_size
         self.options = options
 
-        category_value = 'HFACS_Category_balance_Value'
+        if options['is_merge_taxonomy']:
+            category_value = 'HFACS_Category_balance_Value'
+        else:
+            category_value = 'HFACS_Category_Value'
+
         self.category_value = category_value
 
-        factor_col_name = CoreUtils.get_constant()["FACTOR_COL_NAME"]
+        factor_col_name = CoreUtils.get_constant()["LS_CLASSIFICATION_FACTOR"]
         self.factor_col_name = factor_col_name
 
         if dfs is None:
@@ -148,8 +152,14 @@ class ModelLS:
                 autoLabeling = AutoLabeling(df_next)
                 df_labeled_next = autoLabeling.do_auto_label(sample_size)
                 labeled_dfs.append(df_labeled_next)
+
+            merged_df = pd.concat(labeled_dfs, axis=0).reset_index(drop=True)
+
+            show_disctribution(merged_df)
             
-            return pd.concat(labeled_dfs, axis=0).reset_index(drop=True)
+            return merged_df
+
+        
 
         df = dfs[ds_name]
         autoLabeling = AutoLabeling(df)
@@ -211,7 +221,7 @@ class ModelLS:
     @staticmethod
     def predict(df: pd.DataFrame, ds_name='asrs', version=0, sample_size=0):
 
-        factor_col_name = CoreUtils.get_constant()["FACTOR_COL_NAME"]
+        factor_col_name = CoreUtils.get_constant()["LS_CLASSIFICATION_FACTOR"]
 
         model, vectorizer, label_encoder, unmapped_encoder = load_model_LS(ds_name, version)
 
