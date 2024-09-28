@@ -127,8 +127,12 @@ def define_finding_description(row):
     primary_problem:str = row['primary_problem'] if pd.notnull(row['primary_problem']) else ''
     contributing_factors:str = row['contributing_factors'] if pd.notnull(row['contributing_factors']) else ''
     human_factors:str = row['human_factors'] if pd.notnull(row['human_factors']) else ''
+    problem = row['aircraft_component_problem'] if pd.notnull(row['aircraft_component_problem']) else ''
+    anomaly = row['event_anomaly'] if pd.notnull(row['event_anomaly']) else ''
 
-    return f"{primary_problem}-{contributing_factors}-{human_factors}".rstrip('-')
+    return  "-".join(filter(lambda x: x is not '', [primary_problem, contributing_factors, human_factors, problem, anomaly]))
+
+    # return f"{primary_problem}-{contributing_factors}-{human_factors}-{problem}-{anomaly}".rstrip('-')
 
 def get_human_factor(row, factor):
     human_factors:str = row['human_factors']
