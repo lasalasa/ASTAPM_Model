@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     token_secret: str = "my_dev_secret"
     log_level: str = "DEBUG"
 
-settings = Settings()  # type: ignore
+settings = Settings()
 # end of adapted code
 # TODO REF=https://github.com/ThomasAitken/demo-fastapi-async-sqlalchemy/blob/main/backend/app/config.py
 # TODO REF=https://docs.pydantic.dev/latest/concepts/pydantic_settings/

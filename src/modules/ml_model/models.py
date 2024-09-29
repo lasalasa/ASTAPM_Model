@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
+# code adapted from (ORM Quick Start — SQLAlchemy 2.0 Documentation, n.d.)
 class MachineLearningModel(Base):
     __tablename__ = "ml_model"
     
@@ -31,6 +32,6 @@ class TrainModel(Base):
     # Relationship to model
     ml_model = relationship("MachineLearningModel", back_populates="train_models")
 
-
+# code adapted end
 
 # https://docs.sqlalchemy.org/en/20/orm/quickstart.html

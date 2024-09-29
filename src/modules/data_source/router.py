@@ -1,23 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from . import schemas, service
-# from ..database import get_db
+from . import service
 from src.database import get_db_session
 
-from .dependencies import get_token_header, get_data_source_db_session
+from .dependencies import get_data_source_db_session
 
 router = APIRouter(
     prefix="/data-sources",
     tags=["Data Sources"],
-    # dependencies=[Depends(get_token_header)],
     responses={404: {"description": "Not found"}},
 )
 
 @router.post("/extracts/{ds_id}", 
     summary="Collect data from provided path",
-    # response_model=schemas.DataSourceSchema
 )
 async def extracts(
     ds_id: int,

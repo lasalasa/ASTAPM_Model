@@ -1,8 +1,6 @@
 from sqlalchemy.orm import Session
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
-from sqlalchemy import text, insert
-import pandas as pd
+from sqlalchemy import text
 
 from fastapi import HTTPException, status
 
@@ -11,8 +9,6 @@ import logging
 from . import models, schemas
 from src.core.etl.asrs_etl import AsrsEtl
 from src.core.etl.ntsb_etl import NtsbEtl
-from src.extensions.pd_extension import PdExtension
-from src.database import session_manager, get_db_session, get_child_db_session
 
 # Configure logging
 logging.basicConfig(

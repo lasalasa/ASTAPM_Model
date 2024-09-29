@@ -3,10 +3,7 @@ import csv
 import sys
 
 import pandas as pd
-from sqlalchemy import text, create_engine
-
-# https://www.geeksforgeeks.org/python-import-from-parent-directory/
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from sqlalchemy import create_engine
 
 from src.config import settings
 
@@ -42,7 +39,6 @@ class PdExtension:
     def save_to_json(self, df, filename):
         df_json = df.to_json(orient='records')
 
-        # filename_json = 'artists.json'
         with open(filename, 'w') as f:
             f.write(df_json)
         print ("JSON file written")
@@ -61,7 +57,6 @@ class PdExtension:
 
     def read_db(self, table_name: str):
         try: 
-            # Assuming PdReadExtension.get_engine(self.db_name) returns a valid SQLAlchemy engine
             engine = PdExtension.get_engine(self.db_name)
 
             # Read SQL table into a DataFrame
@@ -77,7 +72,6 @@ class PdExtension:
 
         columns_to_consider = df.columns.difference([column_to_ignore])
 
-        # If you want to remove rows where all values are NaN
         df_cleaned = df.dropna(how='all', subset=columns_to_consider)
         df_cleaned = df_cleaned.dropna(axis=1, how='all')
 

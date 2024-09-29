@@ -14,6 +14,3 @@ class DataSource(Base):
     ds_db = Column(String)
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
-
-
-# https://docs.sqlalchemy.org/en/20/orm/quickstart.html

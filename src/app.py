@@ -1,19 +1,13 @@
-import uvicorn
 import logging
-from typing import List
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
-from sqlalchemy.orm import Session
+from fastapi import FastAPI, HTTPException, Request
 
-from .dependencies import get_query_token, get_token_header
 from .modules.data_source.router import router as data_source_router
 from .modules.ml_model.router import router as ml_model_router
 from .database import session_manager
 
 from src.config import settings
-
-# from web.app import app as Dashboard
 
 base_db_conn_async = settings.base_db_conn_async
 
