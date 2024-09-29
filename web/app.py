@@ -1,3 +1,4 @@
+# code adapted from Gabri-Al (n.d.)
 import dash
 import dash_bootstrap_components as dbc
 from dash import Dash, html, dcc, Input, Output, State
@@ -46,3 +47,4 @@ def toggle_navbar_collapse(n, is_open):
 
 if __name__ == '__main__':
     app.run(debug=True)
+# end of adapted code

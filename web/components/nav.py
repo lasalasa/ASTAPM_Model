@@ -1,3 +1,4 @@
+# code adapted from Gabri-Al (n.d.)
 from dash import html
 import dash_bootstrap_components as dbc
 import dash
@@ -21,3 +22,4 @@ _nav = dbc.Container([
 	        vertical=True, pills=True, class_name='my-nav')
     ])
 ])
+# end of adapted code

@@ -1,3 +1,4 @@
+# code adapted from Gabri-Al (n.d.)
 from dash import html
 import dash_bootstrap_components as dbc
 
@@ -22,3 +23,4 @@ _footer = html.Div([
         ])
     ], fluid=True)
 ], className = 'footer')
+# end of adapted code

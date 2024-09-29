@@ -1,26 +1,16 @@
-# https://plotly.com/python/#ai_ml
-# https://plotly.com/python/range-slider/
 import time
-import os
-import json
-from io import StringIO
-from dash import Dash, dcc, html, Input, Output
-from dash import Dash, dcc, html, Input, Output, callback
+from dash import dcc, html, Input, Output
+from dash import dcc, html, Input, Output, callback
 import plotly.graph_objects as go
-import matplotlib.pyplot as plt
 
 import plotly.figure_factory as ff
 import plotly.express as px
-# from scipy.stats import gaussian_kde
-from collections import Counter
 
 import dash
 import dash_bootstrap_components as dbc
 import numpy as np
 
-import base64
 import datetime
-import io
 
 import pandas as pd
 
@@ -65,7 +55,7 @@ model_type_selector = dbc.Select(
     className="mb-2"
 )
 
-# https://dash.plotly.com/dash-core-components/datepickerrange
+# code adapted from (DatePickerRange | Dash for Python Documentation | Plotly, n.d.)
 date_range = dcc.DatePickerRange(
     id="date_range_picker_id",
     min_date_allowed=datetime.date(2000, 1, 1),
@@ -76,6 +66,7 @@ date_range = dcc.DatePickerRange(
     display_format="YYYY-MM-DD",
     className="mb-6"
 )
+# end of adapted code
 
 model_ls_version_selector = dbc.Select(
     id="model_ls_selector_id",
@@ -115,7 +106,6 @@ layout = dbc.Container(
             id="tabs",
             active_tab="info",
         ),
-        # Ref:
         dbc.Spinner(
             [
                 dcc.Store(id="store"),
@@ -139,19 +129,13 @@ def labelCountDistribution(data):
 
 def wordCountDistribution(data):
     narrative_word_count = data['train_narrative_word_count']
-    # https://plotly.com/python/distplot/
-   # Example data (replace with your actual DataFrame)
-    # data = {'narrative_word_count': [120, 150, 300, 250, 400, 500, 320, 180, 240, 360, 410]}
-    # df = pd.DataFrame(data)
 
-    # df = px.data.tips()
-    hist_data = [narrative_word_count]  # List of lists
-    group_labels = ['Word Count']  # Name of the dataset
+    hist_data = [narrative_word_count]
+    group_labels = ['Word Count']
 
-    # Create distplot with histogram and KDE
+    # code adapted from (Distplots, n.d.)
     fig = ff.create_distplot(hist_data, group_labels, bin_size=50, colors=['blue'], show_hist=True, show_rug=False)
 
-    # Add mean and standard deviation as annotations
     mean = np.mean(narrative_word_count)
     std = np.std(narrative_word_count)
 
@@ -162,6 +146,7 @@ def wordCountDistribution(data):
         yaxis_title="Density",
         plot_bgcolor='rgba(0,0,0,0)'
     )
+    # end of adapted code
 
     return fig
 
@@ -172,14 +157,13 @@ def totalUniqueWordCountDistribution(data):
     labels = train_word_count['labels']
     values = train_word_count['values']
 
-    # Create a bar plot using Plotly Express
     fig = px.bar(x=labels, y=values, title="Top 50 Most Frequent Words", labels={'x': 'Words', 'y': 'Count'})
 
     # Customize layout
     fig.update_layout(
         xaxis_title="Words",
         yaxis_title="Frequency",
-        xaxis_tickangle=-90  # Rotate the x-axis labels by 90 degrees
+        xaxis_tickangle=-90
     )
 
     return fig
@@ -259,15 +243,17 @@ def accuracyView(data):
 def trendView(data):
     fig = go.Figure()
 
-    # https://plotly.com/python/range-slider/
-    # Your dictionary data
     predict_data = data['sample_predict_view']
 
-    # Convert dictionary to DataFrame
+    # Convert to DataFrame
     df = pd.DataFrame.from_dict(predict_data, orient='index')
-    df.index = pd.to_datetime(df.index)  # Convert index to datetime format
+
+    # Convert index to datetime format
+    df.index = pd.to_datetime(df.index)  
+
     df = df.reset_index().rename(columns={'index': 'date'}) 
 
+    # code adapted from (Range, n.d.)
     fig = px.line(df, x="date", y=df.columns[1:],
         hover_data={"date": "|%B %d, %Y"},
         title='custom tick labels')
@@ -285,6 +271,7 @@ def trendView(data):
                 dict(step="all")
             ])
         ))
+    # end of adapted code
     
     return fig
 
@@ -340,16 +327,13 @@ def render_tab_content(active_tab, data):
 
             fig = go.Figure()
 
-            # https://plotly.com/python/annotated-heatmap/
-
-            # df = px.data.medals_wide(indexed=True)
-            # fig = px.imshow(df, text_auto=True)
-
             print(lb_size, num_columns)
+            # code adapted from (Annotated, n.d.)
             if lb_size == num_columns:
                 fig = px.imshow(conf_matrix, x=labels, y=labels, text_auto=True, color_continuous_scale='Blues', aspect="auto")
             else:
                 fig = px.imshow(conf_matrix, text_auto=True, color_continuous_scale='Blues', aspect="auto")
+            # end of adapted code
 
             fig.update_layout(
                 title='Confusion Matrix',
@@ -360,8 +344,6 @@ def render_tab_content(active_tab, data):
             return dbc.Row(
                 [
                     dcc.Graph(figure=fig)
-                    # dbc.Col(dcc.Graph(figure=data["hist_1"]), width=6),
-                    # dbc.Col(dcc.Graph(figure=data["hist_2"]), width=6),
                 ]
             )
         elif active_tab == "trend_view":
@@ -375,10 +357,6 @@ def render_tab_content(active_tab, data):
 
 @callback(Output("store", "data"), [Input("buttonSimulator", "n_clicks")])
 def do_simulate(n):
-    """
-    This callback generates three simple graphs from random data.
-    """
-
     if not n:
        
         # default Data
@@ -391,7 +369,7 @@ def do_simulate(n):
 
     return model_report
 
-# https://dash.plotly.com/dash-core-components/dropdown
+# code adapted from (Dropdown | Dash for Python Documentation | Plotly, n.d.)
 @callback(
     Input("source_selector_id", "value"))
 def display_color(value):
@@ -405,8 +383,9 @@ def change_model_name(value):
     print("model_name", value)
     
     simulator_form_data["input_model_name"] = value
+# end of adapted code
 
-# https://dash.plotly.com/dash-core-components/datepickerrange
+# code adapted from (DatePickerRange | Dash for Python Documentation | Plotly, n.d.)
 @callback(
     [Input('date_range_picker_id', 'start_date'),
      Input('date_range_picker_id', 'end_date')]
@@ -425,6 +404,7 @@ def change_date_range(start_date, end_date):
         end_date = end_date_object.strftime("%Y-%m-%d %H:%M:%S")
         simulator_form_data["input_to_date"] = end_date
         print("End Date=", end_date)
+# end of adapted code
 
 is_mock = False
 # ------ API Actions ------------------
@@ -446,3 +426,10 @@ def train_model():
             return None
 
     return mock_data
+
+# TODO (DatePickerRange | Dash for Python Documentation | Plotly, n.d.)=https://dash.plotly.com/dash-core-components/datepickerrange
+# TODO (Dropdown | Dash for Python Documentation | Plotly, n.d.)=https://dash.plotly.com/dash-core-components/dropdown
+# https://plotly.com/python/annotated-heatmap/
+# https://plotly.com/python/range-slider/
+# https://plotly.com/python/#ai_ml
+# https://plotly.com/python/distplot/

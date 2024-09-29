@@ -2,13 +2,13 @@ import dash
 from dash import html
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import plotly.express as px
 
 from dash import Dash, dcc, html, Input, Output
 
 dash.register_page(__name__, path='/', name='Dashboard', title='AST-APM | Dashboard')
 
+ # code adapted from (Range, n.d.)
 fig = go.Figure()
 
 df = px.data.stocks()
@@ -28,6 +28,7 @@ fig.update_xaxes(
             dict(step="all")
         ])
     ))
+# end of adapted code
 
 layout =  dbc.Container([
 
@@ -42,5 +43,3 @@ layout =  dbc.Container([
         ]
     )
 ])
-
-# https://plotly.com/python/range-slider/
