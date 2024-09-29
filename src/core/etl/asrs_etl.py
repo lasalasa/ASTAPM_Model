@@ -130,7 +130,7 @@ def define_finding_description(row):
     problem = row['aircraft_component_problem'] if pd.notnull(row['aircraft_component_problem']) else ''
     anomaly = row['event_anomaly'] if pd.notnull(row['event_anomaly']) else ''
 
-    return  "-".join(filter(lambda x: x is not '', [primary_problem, contributing_factors, human_factors, problem, anomaly]))
+    return  "-".join(filter(lambda x: x != '', [primary_problem, contributing_factors, human_factors, problem, anomaly]))
 
     # return f"{primary_problem}-{contributing_factors}-{human_factors}-{problem}-{anomaly}".rstrip('-')
 
@@ -154,8 +154,8 @@ def define_finding_factor(row):
         # if factor == 'Human Factors' or factor == 'Aircraft':
         factor = get_human_factor(row, factor)
 
-        if factor == 'Aircraft':
-            return 'Aircraft-Aircraft systems'
+        # if factor == 'Aircraft':
+        #     return 'Aircraft-Aircraft systems'
 
     else:
         contributing_factors_list = [factor for factor in contributing_factors_list if factor != 'Aircraft']
