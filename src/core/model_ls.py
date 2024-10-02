@@ -14,18 +14,20 @@ from src.core.text_processor import TextPreprocessor
 from src.core.labeling_auto import AutoLabeling, show_disctribution
 from src.extensions.os_extension import OsOperation
 
-#----------- Model Save/Load Func ----------
-def save_model_LS(model, vectorizer, label_encoder, unmapped_encoder, name):
-    # Save both the model and vectorizer to a file
+PATH_PREFIX_MODEL = f'./model_store/model_ls'
 
-    PATH_PREFIX = f'../data/model_store/{name}'
+#----------- Model Save/Load Func ----------
+# Save both the model and vectorizer to a file
+def save_model_LS(model, vectorizer, label_encoder, unmapped_encoder, name):
+    
+    path = f'{PATH_PREFIX_MODEL}/{name}'
 
     osOperation = OsOperation()
-    file_list = osOperation.get_dir_files(PATH_PREFIX)
+    file_list = osOperation.get_dir_files(path)
 
     next_version = len(file_list) + 1
 
-    dump_name = f'{PATH_PREFIX}/model_LS_{name}_{next_version}.pkl'
+    dump_name = f'{path}/model_LS_{name}_{next_version}.pkl'
     
     # code adapted from Sharma (2023)
     joblib.dump((model, vectorizer, label_encoder, unmapped_encoder), dump_name)
@@ -35,21 +37,20 @@ def save_model_LS(model, vectorizer, label_encoder, unmapped_encoder, name):
 def load_model_LS(name, version=0):
     # Load both the model and vectorizer from the file
 
-    PATH_PREFIX = f'../data/model_store/{name}'
+    path = f'{PATH_PREFIX_MODEL}/{name}'
 
     if version == 0:
-        dump_name = f'{PATH_PREFIX}/model_LS_{name}_1.pkl'
+        dump_name = f'{path}/model_LS_{name}_1.pkl'
     else:
-        dump_name = f'{PATH_PREFIX}/model_LS_{name}_{version}.pkl'
+        dump_name = f'{path}/model_LS_{name}_{version}.pkl'
     
     # code adapted from Sharma (2023)
     model, vectorizer,label_encoder, unmapped_encoder = joblib.load(dump_name)
     # end of adapted code
     print("Model and vectorizer loaded successfully")
     return model, vectorizer, label_encoder, unmapped_encoder
-#----------- Model Save/Load Func ----------
 
- #----------- Visualization Func ----------
+#----------- Visualization Func ----------
 # Show Label Distribution
 def show_label(df, label_col):
     plt.figure(figsize=(8,6))
@@ -57,7 +58,7 @@ def show_label(df, label_col):
     plt.title('The distribution of Primary problem')
 
 # confusion_matrix
-def show_confusion_matrix(model, X_test, y_test, label_encoder):
+def show_confusion_matrix(model, X_test, y_test, label_encoder, ds_name='ASRS'):
     # Predict the classes for the test set
     y_pred = model.predict(X_test)
 
@@ -72,9 +73,8 @@ def show_confusion_matrix(model, X_test, y_test, label_encoder):
     sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=label_classes, yticklabels=label_classes)
     plt.xlabel('Predicted Label')
     plt.ylabel('True Label')
-    plt.title('Confusion Matrix')
+    plt.title(f'Confusion Matrix ({ds_name} LS)')
     plt.show()
-#----------- Visualization Func ----------
 
 class ModelLS:
 
@@ -200,7 +200,7 @@ class ModelLS:
         print("Accuracy on test data:", accuracy)
 
         # Optionally show confusion matrix
-        show_confusion_matrix(label_prop_model, X_test, y_test, label_encoder)
+        show_confusion_matrix(label_prop_model, X_test, y_test, label_encoder, ds_name)
 
         # Predict the labels for the full dataset (including unlabeled data)
         y_full_predict = label_prop_model.predict(X)
@@ -219,11 +219,11 @@ class ModelLS:
 
     # Model predict function
     @staticmethod
-    def predict(df: pd.DataFrame, ds_name='asrs', version=0, sample_size=0):
+    def predict(df: pd.DataFrame, model_name='asrs_ntsb', version=0, sample_size=0):
 
         factor_col_name = CoreUtils.get_constant()["LS_CLASSIFICATION_FACTOR"]
 
-        model, vectorizer, label_encoder, unmapped_encoder = load_model_LS(ds_name, version)
+        model, vectorizer, label_encoder, unmapped_encoder = load_model_LS(model_name, version)
 
         # New set of data for prediction
         print("LS sample_size====", sample_size)
@@ -255,5 +255,24 @@ class ModelLS:
 
         return labeled_data
 
+    # Get labels for entire training dataset data
+    @staticmethod
+    def get_labels(model_name, version):
 
-    # https://www.analyticsvidhya.com/blog/2023/02/how-to-save-and-load-machine-learning-models-in-python-using-joblib-library/
+        # Load model
+        model, vectorizer, label_encoder, unmapped_encoder = load_model_LS(model_name, version)
+
+        # code adapted from (Semi-Supervised Learning With Label Spreading, n.d.)
+        tran_labels = model.transduction_
+
+        return tran_labels
+        # end of adapted code
+
+
+# REF Link
+# https://scikit-learn.org/stable/modules/generated/sklearn.semi_supervised.LabelSpreading.html
+# https://seaborn.pydata.org/generated/seaborn.heatmap.html
+# https://blockgeni.com/understanding-semi-supervised-learning-with-label-spreading/
+# https://aicorespot.io/semi-supervised-learning-with-label-spreading/
+# https://machinelearningmastery.com/semi-supervised-learning-with-label-spreading/
+# https://www.analyticsvidhya.com/blog/2023/02/how-to-save-and-load-machine-learning-models-in-python-using-joblib-library/

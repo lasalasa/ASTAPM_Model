@@ -2,10 +2,8 @@ import os
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 
-# Load environment variables from a .env file
 load_dotenv()
 
-# Extract environment variables with defaults and error handling
 main_db_name = os.getenv('DB_NAME')
 base_db_conn = os.getenv('BASE_CONN')
 base_db_conn_async = os.getenv('BASE_CONN_ASYNC')
@@ -27,5 +25,3 @@ class Settings(BaseSettings):
 
 settings = Settings()
 # end of adapted code
-# TODO REF=https://github.com/ThomasAitken/demo-fastapi-async-sqlalchemy/blob/main/backend/app/config.py
-# TODO REF=https://docs.pydantic.dev/latest/concepts/pydantic_settings/

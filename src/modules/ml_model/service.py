@@ -114,7 +114,18 @@ async def do_train(
 
         if input_model_name == "LSTM_Predictor":
             print(max_length, max_nb_words)
-            model_LSTM = LSTMModel(dfs, ds_name=input_data_source, ls_version=input_model_ls_version, sample_size=0, max_length=max_length, max_nb_words=max_nb_words, is_enable_smote=is_enable_smote)
+
+            options = {
+                "sample_size": 0, 
+                "max_length": max_length, 
+                "max_nb_words": max_nb_words, 
+                "is_enable_smote": is_enable_smote,
+                "is_enable_asasyn": False,
+                "is_enable_class_weight": False,
+                "ls_name": 'asrs_ntsb',
+                "ls_version": input_model_ls_version
+            }
+            model_LSTM = LSTMModel(dfs, ds_name=input_data_source, options=options)
             model_LSTM.train()
             evaluation_report = model_LSTM.evaluate()
         

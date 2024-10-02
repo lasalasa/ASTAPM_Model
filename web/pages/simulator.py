@@ -31,7 +31,7 @@ simulator_form_data = {
     "input_model_name": "LSTM_Predictor",
     "input_from_date": start_date.strftime("%Y-%m-%d %H:%M:%S"),
     "input_to_date": end_date.strftime("%Y-%m-%d %H:%M:%S"),
-    "input_model_ls_version": 1
+    "input_model_ls_version": 2
 }
 
 source_selector = dbc.Select(

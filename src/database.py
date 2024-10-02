@@ -136,7 +136,6 @@ class DatabaseSessionManager:
         await connection.run_sync(Base.metadata.drop_all)
 
 session_manager = DatabaseSessionManager()
-# end of adapted code
 
 async def get_db_session(request: Request) -> AsyncSession:
     return request.state.session
@@ -144,12 +143,5 @@ async def get_db_session(request: Request) -> AsyncSession:
 async def get_child_db_session(db_name: str) -> AsyncSession:
     async with session_manager.session(db_name) as session:
         return session
-
-# TODO REF=https://stackoverflow.com/questions/838978/how-to-check-if-mysql-database-exists
-# TODO REF=https://praciano.com.br/fastapi-and-async-sqlalchemy-20-with-pytest-done-right.html
-
-# https://praciano.com.br/fastapi-and-async-sqlalchemy-20-with-pytest-done-right.html
-# https://github.com/ThomasAitken/demo-fastapi-async-sqlalchemy/blob/main/backend/app/crud/user.py
-# https://medium.com/@tclaitken/setting-up-a-fastapi-app-with-async-sqlalchemy-2-0-pydantic-v2-e6c540be4308
-# https://dev.to/akarshan/asynchronous-database-sessions-in-fastapi-with-sqlalchemy-1o7e
+# end of adapted code
 

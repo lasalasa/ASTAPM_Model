@@ -22,8 +22,6 @@ pip install -r requirements.txt
 ```
 ### Rename .env.sample to .env
 
-### 
-
 ### Freeze dependencies to requirements.txt
 ```
 pip freeze > requirements.txt
@@ -81,7 +79,6 @@ ASTAPM/
 │   ├── config.py
 │   ├── constant.py
 │   ├── database.py
-│   ├── dependencies.py
 │   ├── app.py
 │
 ├── tests

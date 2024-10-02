@@ -5,9 +5,9 @@ HFACS_DICTIONARY = {
         # Unmapped
     -1: ('Unmapped', 'Unmapped', 'Unmapped', ''),
     # Unsafe Acts
-    110: ('Level 1', 'Unsafe acts', 'Errors/Violations', 'Unsafe acts Errors/Violations'), # 'Decision/Skill-based/Perceptual Errors/Violations'
+    110: ('Level 1', 'Unsafe acts', 'Errors/Violations', 'Unsafe acts(Decision/Perceptual/Violations)'), # 'Decision/Skill-based/Perceptual Errors/Violations'
     # Unsafe Acts / Errors
-    111: ('Level 1', 'Unsafe acts', 'Errors', 'Skill-based Errors'),
+    111: ('Level 1', 'Unsafe acts', 'Errors', 'Unsafe acts/Skill-based Errors'),
     112: ('Level 1', 'Unsafe acts', 'Errors', 'Decision Errors'),
     113: ('Level 1', 'Unsafe acts', 'Errors', 'Perceptual Errors'),
     # Unsafe Acts / Violations
@@ -16,7 +16,7 @@ HFACS_DICTIONARY = {
     122: ('Level 1', 'Unsafe acts', 'Violations', 'Exceptional Violations'),
 
     # Preconditions for Unsafe Acts
-    210: ('Level 2', 'Preconditions for Unsafe Acts', 'Environmental Factors', 'Physical / Technological Environment'),
+    210: ('Level 2', 'Preconditions for Unsafe Acts', 'Environmental Factors', 'Physical/Technological Environment'),
     # Preconditions for Unsafe Acts/Environmental Factors
     211: ('Level 2', 'Preconditions for Unsafe Acts', 'Environmental Factors', 'Physical Environment'),
     212: ('Level 2', 'Preconditions for Unsafe Acts', 'Environmental Factors', 'Technological Environment'),

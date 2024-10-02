@@ -26,7 +26,7 @@ def show_disctribution(df):
     sorted_balance_values = sorted(df['HFACS_Category_balance_Value'].unique())
     # Plot the second countplot on the second axes
     sns.countplot(x='HFACS_Category_balance_Value', data=df, ax=axes[1], order=sorted_balance_values)
-    axes[1].set_title('The distribution of Taxonomy (With Proposed HFACS)')
+    axes[1].set_title('The distribution of Taxonomy (With Adjusted HFACS)')
     axes[1].tick_params(axis='x', rotation=90)  # Rotate x-axis labels if needed
 
     # Adjust layout to prevent overlap

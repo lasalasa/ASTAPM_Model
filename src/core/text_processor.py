@@ -71,7 +71,7 @@ class TextPreprocessor:
     def show_summary(self, df: pd.DataFrame):
         null_summary = df.isnull().sum()
         print(null_summary)
-        print(df.head())
+        # print(df.head())
 
     ## -------------- NLP Preprocessing
 
@@ -131,7 +131,7 @@ class TextPreprocessor:
         corpus =df[col_name]
         vectorizer = CountVectorizer()
         X = vectorizer.fit_transform(corpus)
-        print(vectorizer.get_feature_names())
+        # print(vectorizer.get_feature_names())
         return vectorizer, X
 
     # TFIDF Vectorization

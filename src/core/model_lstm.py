@@ -1,10 +1,3 @@
-
-import seaborn as sns
-import matplotlib.pyplot as plt
-import numpy as np
-from collections import Counter
-import pandas as pd
-
 from sklearn.preprocessing import LabelEncoder
 
 # Text pre-processing
@@ -25,12 +18,20 @@ from tensorflow.keras.regularizers import l2
 from tensorflow.keras.models import load_model
 from imblearn.over_sampling import SMOTE
 from imblearn.over_sampling import ADASYN
+from sklearn.utils import class_weight
+import numpy as np
+
+
+import numpy as np
+import pandas as pd
+from collections import Counter
 
 import joblib
 
 from src.core.core_utils import CoreUtils
 from src.core.text_processor import TextPreprocessor
 from src.core.model_ls import ModelLS
+from src.core.model_lstm_plot import word_count_distribution, show_label_distribution, show_lstm_confusion_matrix, show_narrative_distribution, model_summary
 
 # This should be the same as the 'num_words' in the tokenizer
 MAX_NB_WORDS = 7500
@@ -38,86 +39,6 @@ MAX_NB_WORDS = 7500
 EMBEDDING_DIM = 100
 
 MAX_LENGTH = 300
-
-def show_label_distribution(data):
-    plt.figure(figsize=(8,6))
-    sns.countplot(data['HFACS_Category_Value_Predict'])
-    plt.title('The distribution of Primary problem')
-
-def word_count_distribution(df):
-    # Assuming you have a list of all words in your dataset
-    all_words = [word for text in df['narrative'].values for word in text.split()]
-    word_counts = Counter(all_words)
-
-    # Plot top 50 most frequent words
-    common_words = word_counts.most_common(50)
-    labels, values = zip(*common_words)
-    plt.bar(labels, values)
-    plt.xticks(rotation=90)
-    plt.show()
-
-    # Print the number of unique words in your dataset
-    print(f"Total unique words: {len(word_counts)}")
-
-def show_narrative_distribution(data):
-    plt.figure(figsize=(14, 6))
-
-    word_count = data['narrative_word_count']
-
-    sns.histplot(word_count,  bins=50, color='blue', kde=True)
-    plt.xlabel('Number of Words')
-    plt.ylabel('Number of sample')
-    plt.title('Distribution of Word Counts (KDE)')
-
-    # Overlay mean (mu) and standard deviation (sigma) on the plot
-    mean = word_count.mean()
-    std = word_count.std()
-    # Display mean and standard deviation on the plot
-    plt.text(0.7, 0.9, r'$\mu={:.2f}$'.format(mean), transform=plt.gca().transAxes, fontsize=12)
-    plt.text(0.7, 0.85, r'$\sigma={:.2f}$'.format(std), transform=plt.gca().transAxes, fontsize=12)
-
-    # Display the plots
-    plt.tight_layout()
-    plt.show()
-
-# https://towardsdatascience.com/multi-class-text-classification-with-lstm-1590bee1bd17
-
-def model_summary(history):
-
-    # Create subplots: 1 row, 2 columns
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-
-    # Plot the loss on the first axes
-    axes[0].plot(history.history['loss'], label='train')
-    axes[0].plot(history.history['val_loss'], label='test')
-    axes[0].set_title('Loss')
-    axes[0].set_xlabel('Epochs')
-    axes[0].set_ylabel('Loss')
-    axes[0].legend()
-
-    # Plot the accuracy on the second axes
-    axes[1].plot(history.history['accuracy'], label='train')
-    axes[1].plot(history.history['val_accuracy'], label='test')
-    axes[1].set_title('Accuracy')
-    axes[1].set_xlabel('Epochs')
-    axes[1].set_ylabel('Accuracy')
-    axes[1].legend()
-
-    # Adjust layout to prevent overlap
-    plt.tight_layout()
-    plt.show()
-    
-
-#  Confusion Matrix
-def show_lstm_confusion_matrix(conf_matrix, classes):
-    # Plot the confusion matrix
-    plt.figure(figsize=(10,8))
-    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=classes, yticklabels=classes)
-    plt.xlabel('Predicted Label')
-    plt.ylabel('True Label')
-    plt.title('Confusion Matrix')
-    plt.show()
-
 
 def pre_process_df(df, col_name):
 
@@ -152,14 +73,28 @@ def pre_process_df(df, col_name):
     return df
 
 class LSTMModel:
-    def __init__(self, dfs=None, ds_name='asrs', ls_version=1, sample_size=1000, max_length=300, max_nb_words=5000, is_enable_smote=False):
-
+    def __init__(self, dfs=None, ds_name='asrs', options={
+        "ls_name": 'asrs_ntsb',
+        "ls_version": 1,
+        "sample_size":1000,
+        "max_length":300, 
+        "max_nb_words":5000, 
+        "is_enable_smote":False,
+        "is_enable_asasyn": False,
+        "is_enable_class_weight": False,
+    }):
         self.ds_name = ds_name
-        self.sample_size = sample_size
-        self.ls_version = ls_version
+        self.options = options
+        self.sample_size = options['sample_size']
+
+        max_length = options['max_length']
         self.max_length = max_length
-        self.max_nb_words = max_nb_words
-        self.is_enable_smote = is_enable_smote
+
+        max_nb_words = options['max_nb_words']
+        self.max_nb_words  = max_nb_words 
+        self.is_enable_smote = options['is_enable_smote']
+        self.is_enable_asasyn = options['is_enable_asasyn']
+        self.is_enable_class_weight = options['is_enable_class_weight']
 
         factor_col_name = CoreUtils.get_constant()["LS_CLASSIFICATION_FACTOR"]
         self.factor_col_name = factor_col_name
@@ -177,9 +112,9 @@ class LSTMModel:
 
         df = dfs[ds_name]
 
-        show_label_distribution(df)
-        show_narrative_distribution(df)
-        word_count_distribution(df)
+        show_label_distribution(df, ds_name)
+        show_narrative_distribution(df, ds_name)
+        word_count_distribution(df, ds_name)
 
         print("Define Y")
         lstm_labels = df['HFACS_Category_Value_Predict'].values
@@ -201,14 +136,16 @@ class LSTMModel:
 
         print('Shape of data tensor:', X.shape)
         
+        # Code adapted from Li (2021)
         model = Sequential()
         model.add(Embedding(max_nb_words, EMBEDDING_DIM))
-        model.add(SpatialDropout1D(0.25))
-        model.add(LSTM(units=64, return_sequences=True, dropout=0.25, recurrent_dropout=0.25))
-        model.add(LSTM(units=64, dropout=0.25, recurrent_dropout=0.25))
+        model.add(SpatialDropout1D(0.3))
+        model.add(LSTM(units=128, return_sequences=True, dropout=0.3, recurrent_dropout=0.3))
+        model.add(LSTM(units=128, dropout=0.3, recurrent_dropout=0.3))
         model.add(Dense(len(lstm_label_encoder.classes_), activation='softmax', kernel_regularizer=l2(0.001)))
 
-        model.compile(loss='sparse_categorical_crossentropy', optimizer=Adam(learning_rate=0.0001),  metrics=['accuracy'])
+        model.compile(loss='sparse_categorical_crossentropy', optimizer=Adam(learning_rate=0.0001) ,  metrics=['accuracy'])
+        # Code adapted end
 
         self.model = model
 
@@ -230,7 +167,7 @@ class LSTMModel:
 
         return dfs
 
-    def define_hyperparameters(self, options):
+    def get_hyperparameters(self, options):
         # Hyperparameters 
         self.max_nb_words = 10000 # max number of words to use in the vocabulary
         self.max_length = 100 # max length of each text (in terms of number of words)
@@ -238,25 +175,28 @@ class LSTMModel:
         self.lstm_units = 64 # number of units in the LSTM layer 
         self.num_of_class = len(self.lstm_label_encoder.classes_)
     
-    def define_model(self):
+    def make_model(self):
         model = Sequential()
         model.add(Embedding(self.max_nb_words, self.embedding_dim))
-        model.add(SpatialDropout1D(0.25))
-        model.add(LSTM(units=self.lstm_units, return_sequences=True, dropout=0.25, recurrent_dropout=0.25))
-        model.add(LSTM(units=64, dropout=0.25, recurrent_dropout=0.25))
+        model.add(SpatialDropout1D(0.3))
+        model.add(LSTM(units=self.lstm_units, return_sequences=True, dropout=0.3, recurrent_dropout=0.3))
+        model.add(LSTM(units=self.lstm_units, dropout=0.3, recurrent_dropout=0.3))
         model.add(Dense(len(self.num_of_class), activation='softmax', kernel_regularizer=l2(0.001)))
 
     def pre_process(self, dfs):
         ds_name = self.ds_name
         sample_size = self.sample_size
-        ls_version = self.ls_version
         factor_col_name = self.factor_col_name
+        options = self.options
+
+        ls_name = options['ls_name']
+        ls_version = options['ls_version']
 
         df = dfs[ds_name]
 
         # 02. Label Spreading
         print("Start labelling")
-        df = ModelLS.predict(df, ds_name, ls_version, sample_size)
+        df = ModelLS.predict(df, ls_name, ls_version, sample_size)
         print("Ladled Sampling size=", df.shape)
 
         print("start pre_process_df")
@@ -268,20 +208,21 @@ class LSTMModel:
         return dfs
 
 
-    def train(self, epochs=10, batch_size=32):
+    def train(self, epochs=10, batch_size=32, class_weights_dict=None):
 
         X = self.X
         Y = self.Y
         is_enable_smote = self.is_enable_smote
+        is_enable_asasyn =  self.is_enable_asasyn
+        is_enable_class_weight = self.is_enable_class_weight
 
-        X_train, X_test, Y_train, Y_test = train_test_split(X,Y, test_size = 0.3, random_state = 42)
+        X_train, X_test, Y_train, Y_test = train_test_split(X,Y, test_size = 0.20, random_state = 42)
         
         print(X_train.shape,Y_train.shape)
         print(X_test.shape,Y_test.shape)
 
-        # print(pd.Series(Y_train).value_counts())
-        print(pd.Series(Y_test).value_counts())
-        
+        print(Counter(Y_train))
+
         if is_enable_smote:
 
             smote = SMOTE(random_state=42)
@@ -290,22 +231,51 @@ class LSTMModel:
             print(f"Original dataset shape: {X_train.shape}")
             print(f"Resampled dataset shape: {X_resampled.shape}")
 
+        elif is_enable_asasyn:
+
+            ada = ADASYN(sampling_strategy='minority', random_state=130)
+            X_resampled, Y_resampled = ada.fit_resample(X_train, Y_train)
+
+            print(f"Original dataset shape: {X_train.shape}")
+            print(f"Resampled dataset shape: {X_resampled.shape}")
+
         else: 
             X_resampled = X_train
             Y_resampled = Y_train
 
-
-        # Early stopping to prevent overfitting
+         # Early stopping to prevent overfitting
         early_stopping = EarlyStopping(monitor='val_loss', 
-            patience=2, 
+            patience=3, 
             min_delta=0.001)
         
-        # Train the model
-        history = self.model.fit(X_resampled, Y_resampled, 
-            epochs=epochs,
-            batch_size=batch_size,
-            validation_split=0.1, 
-            callbacks=[early_stopping])
+        # print(pd.Series(Y_train).value_counts())
+        print(Counter(Y_resampled))
+        # print(pd.Series(Y_resampled).value_counts())
+
+        if is_enable_class_weight:
+
+            if class_weights_dict is None:
+
+                class_weights = class_weight.compute_class_weight(
+                class_weight='balanced',
+                classes=np.unique(Y_resampled), y=Y_resampled)
+                class_weights_dict = dict(enumerate(class_weights))
+
+            print(class_weights_dict)
+
+            history = self.model.fit(X_resampled, Y_resampled, 
+                epochs=epochs,
+                batch_size=batch_size,
+                class_weight=class_weights_dict,
+                validation_split=0.1, 
+                callbacks=[early_stopping])
+        else:
+             # Train the model
+            history = self.model.fit(X_resampled, Y_resampled, 
+                epochs=epochs,
+                batch_size=batch_size,
+                validation_split=0.1, 
+                callbacks=[early_stopping])
         
         self.history = history
         self.X_train = X_train
@@ -340,6 +310,8 @@ class LSTMModel:
         print(f'Accuracy: {accuracy:.4f}')
         
         report = classification_report(Y_test, y_pred_classes, labels=map_labels, output_dict=True)
+
+        self.classification_report = classification_report(Y_test, y_pred_classes, labels=map_labels)
 
         # Classification report for precision, recall, F1-score
         # print(classification_report(Y_test, y_pred_classes, labels=map_labels))
@@ -383,8 +355,8 @@ class LSTMModel:
         
         new_df = df.groupby('date')['lstm_predict_label'].value_counts().unstack().fillna(0)
 
-        model_summary(history)
-        show_lstm_confusion_matrix(conf_matrix, labels)
+        model_summary(history, ds_name)
+        show_lstm_confusion_matrix(conf_matrix, labels, ds_name)
 
         evaluation_result = {
             "accuracy": accuracy,
@@ -425,3 +397,4 @@ class LSTMModel:
         return loaded_model
 
 # https://www.kaggle.com/code/khotijahs1/using-lstm-for-nlp-text-classification
+# https://towardsdatascience.com/multi-class-text-classification-with-lstm-1590bee1bd17

@@ -14,9 +14,9 @@ base_db_conn_async = settings.base_db_conn_async
 logging.basicConfig(level=logging.DEBUG, filename='app.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# code adapted from (Lifespan Events - FastAPI, n.d.)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Example configuration check
     if not base_db_conn_async:
         raise Exception("Database URL is not configured correctly.")
     
@@ -26,14 +26,14 @@ async def lifespan(app: FastAPI):
 
     yield
     await session_manager.close_all()
+# code adapted end
 
-# app = FastAPI(lifespan=lifespan, dependencies=[Depends(get_query_token)])
 app = FastAPI(lifespan=lifespan)
 
+# code adapted from (Middleware - FastAPI, n.d.)
 @app.middleware("http")
 async def db_session_middleware(request: Request, call_next):
     try:
-        # Create async session from session manager
         async with session_manager.session("ASTAPM") as session:
             request.state.session = session
             response = await call_next(request)
@@ -41,16 +41,7 @@ async def db_session_middleware(request: Request, call_next):
     except Exception as e:
         logger.error(f"Failed to handle session: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
+# code adapted end
 
 app.include_router(data_source_router)
 app.include_router(ml_model_router)
-
-# Bigger Applications - Multiple Files
-# https://fastapi.tiangolo.com/tutorial/bigger-applications/#import-fastapi
-# https://medium.com/@amirm.lavasani/how-to-structure-your-fastapi-projects-0219a6600a8f
-# https://github.com/zhanymkanov/fastapi-best-practices?source=post_page-----0219a6600a8f--------------------------------#1-project-structure-consistent--predictable
-
-# Tesla Stock Forecasting 📈 Multi-Step Stacked LSTM
-# https://www.kaggle.com/code/guslovesmath/tesla-stock-forecasting-multi-step-stacked-lstm
-
-# https://fastapi.tiangolo.com/tutorial/sql-databases/#review-all-the-files
