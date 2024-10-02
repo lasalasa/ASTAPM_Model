@@ -335,7 +335,6 @@ class LSTMModel:
         # Convert DataFrame to dictionary or list of records
         train_data_label_value_count_dict = train_data_label_value_count.to_dict(orient='records')
 
-        # https://docs.python.org/3/library/collections.html#collections.Counter
         all_words = [word for text in df['narrative'].values for word in text.split()]
         word_counts = Counter(all_words)
         common_words = word_counts.most_common(50)
@@ -395,6 +394,3 @@ class LSTMModel:
         loaded_model = load_model(f'{ds_name}.keras')
         loaded_model.summary()
         return loaded_model
-
-# https://www.kaggle.com/code/khotijahs1/using-lstm-for-nlp-text-classification
-# https://towardsdatascience.com/multi-class-text-classification-with-lstm-1590bee1bd17

@@ -6,6 +6,7 @@ from src.database import get_db_session
 
 from .dependencies import get_data_source_db_session
 
+# code adapted from (SQL (Relational) Databases - FastAPI, n.d.)
 router = APIRouter(
     prefix="/data-sources",
     tags=["Data Sources"],
@@ -34,14 +35,4 @@ async def re_clean_data_source(
     data_source, ds_db_session = ds_and_ds_db_session
     result = await service.load_data(db_session, ds_db_session, data_source, ds_id)
     return result
-
-@router.get("/trends-overview",
-    summary="Clean and restore the data source data")
-async def re_clean_data_source(
-    ds_id: int,
-    db_session: AsyncSession = Depends(get_db_session),
-    ds_and_ds_db_session: AsyncSession = Depends(get_data_source_db_session) 
-):
-    data_source, ds_db_session = ds_and_ds_db_session
-    result = await service.load_data(db_session, ds_db_session, data_source, ds_id)
-    return result
+# code adapted end

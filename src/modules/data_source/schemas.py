@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 
+# code adapted from (SQL (Relational) Databases - FastAPI, n.d.)
 class DataSourceBaseSchema(BaseModel):
     ds_name: str
     ds_description: str
@@ -23,3 +24,4 @@ class DataSourceSchema(DataSourceBaseSchema):
 
     class Config:
         from_attributes = True
+# code adapted end

@@ -267,12 +267,3 @@ class ModelLS:
 
         return tran_labels
         # end of adapted code
-
-
-# REF Link
-# https://scikit-learn.org/stable/modules/generated/sklearn.semi_supervised.LabelSpreading.html
-# https://seaborn.pydata.org/generated/seaborn.heatmap.html
-# https://blockgeni.com/understanding-semi-supervised-learning-with-label-spreading/
-# https://aicorespot.io/semi-supervised-learning-with-label-spreading/
-# https://machinelearningmastery.com/semi-supervised-learning-with-label-spreading/
-# https://www.analyticsvidhya.com/blog/2023/02/how-to-save-and-load-machine-learning-models-in-python-using-joblib-library/

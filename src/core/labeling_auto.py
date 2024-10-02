@@ -13,23 +13,18 @@ def get_dic(is_balance):
     
 def show_disctribution(df):
 
-    # https://matplotlib.org/stable/gallery/subplots_axes_and_figures/align_labels_demo.html#sphx-glr-gallery-subplots-axes-and-figures-align-labels-demo-py
-    # Create a figure with 1 row and 2 columns of subplots
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
     sorted_values = sorted(df['HFACS_Category_Value'].unique())
-    # Plot the first countplot on the first axes
     sns.countplot(x='HFACS_Category_Value', data=df, ax=axes[0], order=sorted_values)
     axes[0].set_title('The distribution of Taxonomy (With Original HFACS)')
-    axes[0].tick_params(axis='x', rotation=90)  # Rotate x-axis labels if needed
+    axes[0].tick_params(axis='x', rotation=90)
 
     sorted_balance_values = sorted(df['HFACS_Category_balance_Value'].unique())
-    # Plot the second countplot on the second axes
     sns.countplot(x='HFACS_Category_balance_Value', data=df, ax=axes[1], order=sorted_balance_values)
     axes[1].set_title('The distribution of Taxonomy (With Adjusted HFACS)')
-    axes[1].tick_params(axis='x', rotation=90)  # Rotate x-axis labels if needed
+    axes[1].tick_params(axis='x', rotation=90)
 
-    # Adjust layout to prevent overlap
     plt.tight_layout()
     plt.show()
 

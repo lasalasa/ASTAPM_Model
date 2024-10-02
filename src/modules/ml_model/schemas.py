@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import List, Dict, Optional
 from enum import Enum
 
+# code adapted from (SQL (Relational) Databases - FastAPI, n.d.)
 class ModelType(str, Enum):
     SVM = "SVM"
     LSTM = "LSTM"
@@ -60,3 +61,4 @@ class TrainModelSchema(BaseModel):
 
     class Config:
         from_attributes = True
+# code adapted end

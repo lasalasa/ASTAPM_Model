@@ -142,8 +142,3 @@ class TextPreprocessor:
         X = vectorizer.fit_transform(corpus)
         return vectorizer, X
     # end of adapted code
-
-    # https://www.analyticsvidhya.com/blog/2021/06/text-preprocessing-in-nlp-with-python-codes/#:~:text=Text%20preprocessing%20is%20an%20essential,part%2Dof%2Dspeech%20tagging.
-    # https://www.nltk.org/api/nltk.tokenize.html
-    # https://www.analyticsvidhya.com/blog/2021/07/bag-of-words-vs-tfidf-vectorization-a-hands-on-tutorial/
-    # https://www.analyticsvidhya.com/blog/2020/02/quick-introduction-bag-of-words-bow-tf-idf/#:~:text=Bag%20of%20Words%20just%20creates,less%20important%20ones%20as%20well.
