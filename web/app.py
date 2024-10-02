@@ -1,7 +1,7 @@
 # code adapted from Gabri-Al (n.d.)
 import dash
 import dash_bootstrap_components as dbc
-from dash import Dash, html, dcc, Input, Output, State
+from dash import dcc
 
 app = dash.Dash(
     __name__, 
@@ -34,16 +34,6 @@ app.layout = dbc.Container([
     ]),
     dcc.Store(id='browser-memo', data=dict(), storage_type='session')
 ], fluid=True)
-
-@app.callback(
-    Output("navbar-collapse", "is_open"),
-    [Input("navbar-toggler", "n_clicks")],
-    [State("navbar-collapse", "is_open")],
-)
-def toggle_navbar_collapse(n, is_open):
-    if n:
-        return not is_open
-    return is_open
 
 if __name__ == '__main__':
     app.run(debug=True)

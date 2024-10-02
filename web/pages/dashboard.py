@@ -4,7 +4,7 @@ import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import plotly.express as px
 
-from dash import Dash, dcc, html, Input, Output
+from dash import dcc, html
 
 dash.register_page(__name__, path='/', name='Dashboard', title='AST-APM | Dashboard')
 

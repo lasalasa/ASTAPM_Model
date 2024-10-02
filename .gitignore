@@ -162,10 +162,10 @@ cython_debug/
 #.idea/
 
 # local data and DS_Store
-*/**/data
-*/**/store
-data
-data_store
+# */**/data
+# */**/store
+# data
+# data_store
 
 # Ignore temporary Word files
 ~$*.docx
@@ -183,6 +183,7 @@ python_modulessource
 sampletext.txt
 
 *.csv
+*.mdb
 
 app.log
 _references/

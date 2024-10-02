@@ -50,19 +50,11 @@ VALUES ('LSTM_Predictor', 'LSTM', 'Long Short-Term Memory network for time-serie
 CREATE TABLE train_model (
     train_model_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     ml_model_id INT UNSIGNED,
-    training_data JSON NOT NULL, -- Features and labels in JSON form
+    training_data JSON NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY `uk_train_model_id` (`train_model_id`),
     FOREIGN KEY (ml_model_id) REFERENCES ml_model(ml_model_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- -- Update the data_source table adding ds_path and ds_type
--- ALTER TABLE data_source
--- ADD COLUMN ds_path VARCHAR(255) DEFAULT NULL,
--- ADD COLUMN ds_type VARCHAR(50) NOT NULL;
-
--- UPDATE data_source SET ds_path = 'data/asrs_data', ds_type = 'csv' WHERE ds_name = 'ASRS';
--- UPDATE data_source SET ds_path = 'data/ntsb_data', ds_type = 'mdb' WHERE ds_name = 'NTSB';
 
 

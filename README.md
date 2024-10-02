@@ -16,11 +16,13 @@ python_modules\Scripts\activate
 ```
 source python_modules/bin/activate
 ```
-
 ### Install dependencies
 ```
-pip install numpy pandas
+pip install -r requirements.txt
 ```
+### Rename .env.sample to .env
+
+### 
 
 ### Freeze dependencies to requirements.txt
 ```
@@ -33,14 +35,16 @@ pip freeze > ./web/requirements.txt
 deactivate
 ```
 
-pip install -r requirements.txt
+## How to Run NoteBooks
+```
+Step 01: Run => notebook_main_LS.ipynb
+Step 02: Run => notebook_main_LSTM_ASRS.ipynb
+Step 03: Run => notebook_main_LSTM_NTSB.ipynb
+Step 04: Run => notebook_main_LSTM_ASRS_NTSB.ipynb
+```
 
-uvicorn main:app --reload
+## How to run Web Service
 
-
-## Run Service
-
-DEV: `fastapi dev main.py`
 uvicorn main:app --reload
 
 
@@ -50,54 +54,42 @@ uvicorn main:app --reload
 ASTAPM/
 │
 ├── data/
-│   ├── raw/
-│   ├── processed/
-│   └── output/
+│   ├── local_ex/
+│   └── local_im/
 │
 ├── src/
-│   └── data_source
-│   │   ├── __init__.py
-│   │   ├── constants.py
-│   │   ├── dependencies.py
-│   │   ├── exceptions.py
-│   │   ├── models.py
-│   │   ├── router.py
-│   │   ├── schemas.py
-│   │   ├── service.py
-│   │   └── utils.py
+│   └── core
+│   └── extensions
+│   └── modules
+│   │   └── modules
+│   │   │   ├── __init__.py
+│   │   │   ├── dependencies.py
+│   │   │   ├── exceptions.py
+│   │   │   ├── models.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   ├── service.py
+│   │   └── data_source
+│   │   │   ├── __init__.py
+│   │   │   ├── dependencies.py
+│   │   │   ├── exceptions.py
+│   │   │   ├── models.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   ├── service.py
 │   ├── __init__.py
 │   ├── config.py
 │   ├── constant.py
 │   ├── database.py
 │   ├── dependencies.py
-│   ├── exceptions.py  # global exceptions
-│   ├── logger.py
-│   ├── main.py
-│   ├── models.py # global models
-│   ├── pagination.py  # global module e.g. pagination
-│   └── utils.py
+│   ├── app.py
 │
-├── tests/
-│   ├── __init__.py
-│   └── test_file_operations.py
+├── tests
 │
-├── notebooks/
-│   ├── analysis.ipynb
-│   └── exploration.ipynb
-│
-├── docs/
-│   └── README.md
+├── notebooks
+├── web
 │
 ├── .gitignore
 ├── README.md
 └── requirements.txt
 ```
-
-## Reference
-https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/
-https://medium.com/@joshuale/a-practical-guide-to-python-project-structure-and-packaging-90c7f7a04f95
-
-FastAPI: https://fastapi.tiangolo.com/#example
-
-https://neptune.ai/blog/text-classification-tips-and-tricks-kaggle-competitions
-https://andreantonacci.github.io/aviation-accidents/
