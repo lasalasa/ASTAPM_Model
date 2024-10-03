@@ -7,7 +7,6 @@ import nltk
 nltk.download('punkt')
 nltk.download('stopwords')
 
-#library that contains punctuation
 import string
 string.punctuation
 import pandas as pd
@@ -16,13 +15,11 @@ import re
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-#importing nlp library
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
 stop_words = set(stopwords.words('english'))
 
-#importing the Stemming function from nltk library
 from nltk.stem.porter import PorterStemmer
 from nltk.stem import WordNetLemmatizer
 
@@ -35,7 +32,6 @@ class TextPreprocessor:
     def combined_narrative(self, df):
         df['narrative_02'] = df['narrative_02'].fillna('')
 
-        # Step 4: Combine 'narrative_01' and 'narrative_02' into a single 'narrative' column
         # code adapted from GeeksforGeeks (2021)
         df['narrative'] = df['narrative_01'].str.cat(df['narrative_02'], sep=' ', na_rep='')
         # end of adapted code

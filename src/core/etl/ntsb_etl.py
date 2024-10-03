@@ -12,7 +12,6 @@ from .etl import ETL
 def combined_narrative(df):
     df['narrative_02'] = df['narrative_02'].fillna('')
 
-    # Step 4: Combine 'narrative_01' and 'narrative_02' into a single 'narrative' column
     # code adapted from GeeksforGeeks (2021)
     df['narrative'] = df['narrative_01'].str.cat(df['narrative_02'], sep=' ', na_rep=None)
 
@@ -151,15 +150,10 @@ class NtsbEtl(ETL):
 
         data_df.rename(columns={'ev_id': 'event_id', 'ev_date': 'date', 'ev_year': 'year', 'ev_month': 'month', 'ev_country': 'country', 'ev_state': 'state'}, inplace=True)
 
-        # Assuming year and month are integer columns
         data_df['year'] = data_df['year'].astype(int)
         data_df['month'] = data_df['month'].astype(int)
 
-        # Create a date column, assuming day = 1 (as day is not provided)
         data_df['date'] = pd.to_datetime(data_df[['year', 'month']].assign(day=1))
-
-        # https://pandas.pydata.org/docs/reference/api/pandas.to_datetime.html
-        # data_df['date'] = pd.to_datetime(data_df['date'], format='%d/%m/%y %H:%M:%S', errors='coerce')
 
         print(data_df['date'].head())
 

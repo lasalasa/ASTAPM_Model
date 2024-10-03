@@ -32,7 +32,6 @@ def get_time(time_range):
 def combined_narrative(df):
     df['narrative_02'] = df['narrative_02'].fillna('')
 
-    # Step 4: Combine 'narrative_01' and 'narrative_02' into a single 'narrative' column
     # code adapted from GeeksforGeeks (2021)
     df['narrative'] = df['narrative_01'].str.cat(df['narrative_02'], sep=' ', na_rep='')
     # end of adapted code
@@ -78,50 +77,7 @@ def clean_event_factores(df):
     df['contributing_factors'] = df['contributing_factors'].fillna(df['primary_problem'])
     return df
 
-# def combine_event_factors(row):
-#     # # https://sparkbyexamples.com/pandas/pandas-concatenate-two-columns/
-#     # # Concatenate the selected columns with a separator (e.g., a space or comma)
-#     primary_problem = row['primary_problem']
-
-#     # Check for 'Weather'
-#     if primary_problem == 'Weather':
-#         return primary_problem
-    
-#     # Check for 'Human Factors'
-#     if primary_problem == 'Human Factors':
-#         human_factors = row['human_factors'] if pd.notnull(row['human_factors']) else ''
-#         anomaly = row['event_anomaly'] if pd.notnull(row['event_anomaly']) else ''
-        
-#         if human_factors and not human_factors == primary_problem:
-#             return human_factors
-#         elif human_factors and anomaly:
-#             return f"{human_factors}:{anomaly}".rstrip(':')
-#         return primary_problem
-
-#     # For other primary problems
-#     else:
-#         human_factors = row['human_factors'] if pd.notnull(row['human_factors']) else ''
-#         aircraft_component = row['aircraft_component'] if pd.notnull(row['aircraft_component']) else ''
-#         problem = row['aircraft_component_problem'] if pd.notnull(row['aircraft_component_problem']) else ''
-#         anomaly = row['event_anomaly'] if pd.notnull(row['event_anomaly']) else ''
-
-#         contributing_factors = row['contributing_factors'] if pd.notnull(row['contributing_factors']) else ''
-        
-#         if human_factors and aircraft_component and problem and anomaly:
-#             # print(f'----={primary_problem}>{human_factors}')
-#             return f"{human_factors}:{aircraft_component}:{problem}:{anomaly}".rstrip(':')
-        
-#         if contributing_factors == 'Aircraft' and primary_problem == 'Aircraft':
-#             return 'Aircraft-Aircraft'
-
-#         contributing_factors = contributing_factors.replace("Aircraft", "")
-#         if contributing_factors and aircraft_component and problem and anomaly:
-#             return f"{primary_problem}:{aircraft_component}:{problem}:{anomaly}".rstrip(':')
-#         return primary_problem
-
 def define_finding_description(row):
-    # # https://sparkbyexamples.com/pandas/pandas-concatenate-two-columns/
-    # # Concatenate the selected columns with a separator (e.g., a space or comma)
     primary_problem = row['primary_problem']
 
     primary_problem:str = row['primary_problem'] if pd.notnull(row['primary_problem']) else ''
@@ -179,7 +135,6 @@ class AsrsEtl(ETL):
         super().__init__(data_source)
     
     async def extract_data(self):
-        # https://www.geeksforgeeks.org/python-loop-through-folders-and-files-in-directory/
 
         # ds_raw_db = ds.ds_raw_db
         print("Extracting data...")
@@ -368,6 +323,3 @@ class AsrsEtl(ETL):
         data_df = clean_feature(data_df, 'finding_description')
 
         return data_df
-
-
-    

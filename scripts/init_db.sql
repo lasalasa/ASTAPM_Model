@@ -57,5 +57,3 @@ CREATE TABLE train_model (
     UNIQUE KEY `uk_train_model_id` (`train_model_id`),
     FOREIGN KEY (ml_model_id) REFERENCES ml_model(ml_model_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-

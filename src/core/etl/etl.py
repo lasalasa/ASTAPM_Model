@@ -132,8 +132,6 @@ class ETL(ABC):
         self.transformed_data[self.ds_prefix] = self.build_main_mada(all_data)
         self.transformed_data[self.narrative_table_name] = self.build_narrative_data(all_data)
         self.transformed_data[self.factors_table_name] = self.build_factors_data(all_data)
-
         
 # end of adapted code
-# TODO REF=https://docs.python.org/3/library/abc.html
 

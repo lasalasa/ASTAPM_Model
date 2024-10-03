@@ -39,8 +39,10 @@ def show_narrative_distribution(data, ds_name='asrs'):
     std = word_count.std()
 
     # Display mean and standard deviation on the plot
+    # code adapted from (Controlling Style of Text and Labels Using a Dictionary — Matplotlib 3.9.2 Documentation, n.d.)
     plt.text(0.7, 0.9, r'$\mu={:.2f}$'.format(mean), transform=plt.gca().transAxes, fontdict={'size': 20})
     plt.text(0.7, 0.85, r'$\sigma={:.2f}$'.format(std), transform=plt.gca().transAxes, fontdict={'size': 20})
+    # code adapted end
 
     # Display the plots
     plt.tight_layout()

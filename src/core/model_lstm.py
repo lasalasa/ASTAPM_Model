@@ -166,22 +166,16 @@ class LSTMModel:
         dfs[ds_name] = pd.concat(dfs_list, axis=0).reset_index(drop=True)
 
         return dfs
-
-    def get_hyperparameters(self, options):
-        # Hyperparameters 
-        self.max_nb_words = 10000 # max number of words to use in the vocabulary
-        self.max_length = 100 # max length of each text (in terms of number of words)
-        self.embedding_dim = 100 # dimension of word embeddings
-        self.lstm_units = 64 # number of units in the LSTM layer 
-        self.num_of_class = len(self.lstm_label_encoder.classes_)
     
     def make_model(self):
+        # Code adapted from Li (2021)
         model = Sequential()
         model.add(Embedding(self.max_nb_words, self.embedding_dim))
         model.add(SpatialDropout1D(0.3))
         model.add(LSTM(units=self.lstm_units, return_sequences=True, dropout=0.3, recurrent_dropout=0.3))
         model.add(LSTM(units=self.lstm_units, dropout=0.3, recurrent_dropout=0.3))
         model.add(Dense(len(self.num_of_class), activation='softmax', kernel_regularizer=l2(0.001)))
+        # Code adapted end
 
     def pre_process(self, dfs):
         ds_name = self.ds_name
