@@ -256,9 +256,7 @@ class LSTMModel:
 
             if class_weights_dict is None:
 
-                class_weights = class_weight.compute_class_weight(
-                class_weight='balanced',
-                classes=np.unique(Y_resampled), y=Y_resampled)
+                class_weights = class_weight.compute_class_weight(class_weight='balanced', classes=np.unique(Y_resampled), y=Y_resampled)
                 class_weights_dict = dict(enumerate(class_weights))
 
             print(class_weights_dict)

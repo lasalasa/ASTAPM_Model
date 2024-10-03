@@ -1,7 +1,8 @@
--- https://dev.mysql.com/doc/refman/5.7/en/example-auto-increment.html
-
 -- Create the ASTAPM database
 CREATE DATABASE IF NOT EXISTS astapm;
+CREATE DATABASE IF NOT EXISTS asrs_raw;
+CREATE DATABASE IF NOT EXISTS ntsb_raw;
+
 
 -- Switch to the ASTAPM database
 USE astapm;

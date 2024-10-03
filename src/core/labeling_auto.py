@@ -50,8 +50,6 @@ class AutoLabeling:
                 for keyword in keywords:
 
                     # First check for an exact match
-                    # print(doc_text, keyword)
-
                     if keyword.lower() == doc_text.lower():
                         return HFACS_DICTIONARY[subcategory]
                     

@@ -1,6 +1,6 @@
 # ASTAPM (Aviation Safety Trends Analysis and Predictive Model)
 
-## Set up Virtual Environment(VM)
+## Set-up Environment
 
 ### Create a VM
 ```
@@ -33,7 +33,9 @@ pip freeze > ./web/requirements.txt
 deactivate
 ```
 
-## How to Run NoteBooks
+## Start Service
+
+### How to Run NoteBooks
 ```
 Step 01: Run => notebook_main_LS.ipynb
 Step 02: Run => notebook_main_LSTM_ASRS.ipynb
@@ -41,7 +43,7 @@ Step 03: Run => notebook_main_LSTM_NTSB.ipynb
 Step 04: Run => notebook_main_LSTM_ASRS_NTSB.ipynb
 ```
 
-## How to run Web Service
+### How to run Web Service
 
 uvicorn main:app --reload
 
