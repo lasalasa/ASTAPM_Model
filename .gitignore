@@ -191,3 +191,6 @@ _references/
 # saved model
 *.pkl
 *.keras
+
+# data
+data

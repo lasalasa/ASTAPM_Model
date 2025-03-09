@@ -7,7 +7,7 @@ CREATE DATABASE IF NOT EXISTS ntsb_raw;
 -- Switch to the ASTAPM database
 USE astapm;
 
-DROP TABLE data_source;
+DROP TABLE IF EXISTS data_source;
 
 -- Create the data_source table
 CREATE TABLE data_source (
